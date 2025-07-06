@@ -1,10 +1,11 @@
+import Post from '@/components/Post'
 import React from 'react'
 
 const page = () => {
   return (
-    <div>
-      
-    </div>
+    <div className='flex w-full items-center justify-center '>
+      <Post/>
+        </div>
   )
 }
 

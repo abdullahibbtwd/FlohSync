@@ -1,26 +1,87 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* :root {
+ 
+  --primary-background: #FFFFFF;  
+  --secondary-background: #F8F8F8;
+  --primary-text: #1A1A1A;     
+  --secondary-text: #555555;   
+  --primary-accent: #32CD32;  
+
+  --background: var(--primary-background);
+  --foreground: var(--primary-text);
+
+  
+  --dark-primary-background: #0D1117;
+  --dark-secondary-background: #1A202C; 
+  --dark-primary-text: #E0E0E0;     
+  --dark-secondary-text: #A0A0A0;   
+  --dark-primary-accent: #00FF41;   
+
+  --dark-background: var(--dark-primary-background);
+  --dark-foreground: var(--dark-primary-text);
 }
 
-@theme inline {
+@custom-variant dark (&:is(.dark *));
+
+@layer base {
+  body {
+    @apply bg-[var(--primary-background)] text-[var(--primary-text)];
+  }
+
+  html.dark {
+  --primary-background: var(--dark-primary-background);
+    --secondary-background: var(--dark-secondary-background);
+    --primary-text: var(--dark-primary-text);
+    --secondary-text: var(--dark-secondary-text);
+    --primary-accent: var(--dark-primary-accent);
+    --background: var(--dark-primary-background);
+    --foreground: var(--dark-primary-text);
+  }
+}
+
+@theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+} */
+
+:root {
+  /* Light Theme */
+  --primary-bg: #FFFFFF;
+  --secondary-bg: #F9F9F9;
+  --primary-text: #1A1A1A;
+  --accent: #32CD32;
+  --gradient-start: #32CD32;
+  --gradient-end: #000000;
+
+  /* Dark Theme - same variable names */
+  --dark-primary-bg: #0D1117;
+  --dark-secondary-bg: #1A202C;
+  --dark-primary-text: #E0E0E0;
+  --dark-accent: #00FF41;
+  --dark-gradient-start: #FFFFFF;
+  --dark-gradient-end: #00FF41;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  /* Override variables for dark mode */
+  --primary-bg: var(--dark-primary-bg);
+  --secondary-bg: var(--dark-secondary-bg);
+  --primary-text: var(--dark-primary-text);
+  --accent: var(--dark-accent);
+  --gradient-start: var(--dark-gradient-start);
+  --gradient-end: var(--dark-gradient-end);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--primary-text);
+  transition: background-color 0.3s, color 0.3s;
+}
+.clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
