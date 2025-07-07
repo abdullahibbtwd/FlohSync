@@ -3,7 +3,7 @@ import React from 'react'
 
 const page = () => {
   return (
-    <div className='flex w-full items-center justify-center '>
+    <div className='flex w-full pb-18 items-center justify-center '>
       <Post/>
         </div>
   )

@@ -35,7 +35,7 @@ export default function RootLayout({
             style={{backgroundColor:"var(--primary-bg)"}}
           >
             <Navbar />
-            <main className="flex-1 pt-20 pb-24 px-4">
+            <main className="flex-1 pt-20 pb-0 px-4">
               {children}
             </main>
             <Footer/>
