@@ -282,7 +282,7 @@ const PostCard: React.FC<PostCardProps> = ({
                 onClick={handleLike}
               />
             </button>
-            <span className="text-xs">
+            <span className="text-[9px] md:text-xs">
               {likeCount > 0
                 ? `${likeCount} Like${likeCount > 1 ? "s" : ""}`
                 : "0 Likes"}
@@ -295,7 +295,7 @@ const PostCard: React.FC<PostCardProps> = ({
             >
               <MessageCircleDashed />
             </button>
-            <span className="text-xs">
+            <span className="text-[9px] md:text-xs">
               {commentCount > 0
                 ? `${commentCount} Comment${commentCount > 1 ? "s" : ""}`
                 : "0 Comment"}

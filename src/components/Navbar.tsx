@@ -6,7 +6,7 @@ import { ThemeButton } from './ThemeButton'
 const Navbar = () => {
   return (
     <div 
-      className='fixed top-0 left-1/2 transform -translate-x-1/2 w-full md:w-4/5 lg:w-3/4 xl:w-2/3 z-50 shadow-md flex justify-between items-center p-4'
+      className='fixed top-0 left-1/2 transform -translate-x-1/2 w-full md:w-4/5 lg:w-3/4 xl:w-2/3 z-50 shadow-md flex justify-between items-center px-4 py-2'
       style={{
         backgroundColor: 'var(--secondary-bg)',
       }}
@@ -18,6 +18,7 @@ const Navbar = () => {
           width={40} 
           height={50} 
           style={{ filter: 'var(--logo-filter)' }}
+          className='w-8 h-8  md:w-13 md:h-13'
         />
 
 
@@ -43,8 +44,8 @@ const Navbar = () => {
             <User 
               style={{ 
                 color: 'black',
-                width: '1.25rem',
-                height: '1.25rem'
+                width: '1.1rem',
+                height: '1.1rem'
               }} 
             />
           </button>

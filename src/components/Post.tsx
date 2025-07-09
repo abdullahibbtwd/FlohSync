@@ -29,8 +29,8 @@ function getRelativeTime(dateString: string) {
 const Post = () => {
   const currentUser = posts[0]?.user;
   return (
-    <div className="flex justify-center items-center w-full">
-      <div className="flex flex-col justify-center items-center gap-3 p-3 w-full md:w-4/5 lg:w-3/4 xl:w-2/3 max-w-2xl">
+    <div className="flex justify-center mt-15 items-center w-full">
+      <div className="flex flex-col justify-center items-center gap-3 md:p-3 w-full md:w-4/5 lg:w-3/4 xl:w-2/3 max-w-2xl">
         {/* Create Post Section */}
         
           <div className="flex items-center w-full gap-3 bg-[var(--secondary-bg)] rounded-lg p-4 mb-4 shadow cursor-pointer hover:bg-[var(--accent)/10] transition">
@@ -42,14 +42,14 @@ const Post = () => {
               className="w-10 h-10 rounded-full object-cover"
             />
            
-              <Link href="/create-post" className="w-9/10">
-             <div  className='flex gap-2 justify-between w-full'>
+              <Link href="/create-post" className="w-8/10 md:w-9/10">
+             <div  className='flex  gap-2 justify-between w-full'>
             <input
               type="text"
               placeholder="Write a post"
-              className="flex-1 px-4 py-2 rounded-full border outline-none bg-[var(--primary-bg)]"
+              className=" md:px-4 px-2 flex-1 w-3/4 md:w-full py-1 md:py-2 rounded-full border outline-none bg-[var(--primary-bg)]"
             />
-            <label className="cursor-pointer flex items-center gap-1 px-3 py-2 rounded-full bg-[var(--primary-bg)] hover:bg-[var(--accent)] transition">
+            <label className="cursor-pointer flex items-center gap-1 px-1.5 py-1 md:px-3 md:py-2 rounded-full bg-[var(--primary-bg)] hover:bg-[var(--accent)] transition">
               <ImageIcon className="w-5 h-5" />
               <input type="file" accept="image/*" className="hidden" />
             </label></div>
