@@ -1,6 +1,7 @@
 "use client"
 import React, { useRef, useEffect, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { scroller, Element } from 'react-scroll';
 
 interface VidFlohProps {
@@ -14,6 +15,7 @@ interface VidFlohProps {
     comments: number;
     shares: number;
     profileImage?: string;
+    userId?: string;
   },
   isActive: boolean;
 }
@@ -130,15 +132,19 @@ const VidFlohCard: React.FC<VidFlohProps> = ({ videoData, isActive }) => {
       {/* Bottom Overlay - User Info */}
       <div className="absolute bottom-0 left-0 w-full p-4 text-white bg-gradient-to-t from-black/80 to-transparent">
         <div className="flex items-center mb-2">
-          <Image
-            src={videoData.profileImage || 'https://picsum.photos/seed/profile/100/100'}
-            alt={videoData.username}
-            width={40}
-            height={40}
-            className="w-10 h-10 rounded-full object-cover border-2 border-white mr-3"
-          />
+          <Link href={`/${videoData.userId || videoData.username}`} className="flex items-center">
+            <Image
+              src={videoData.profileImage || 'https://picsum.photos/seed/profile/100/100'}
+              alt={videoData.username}
+              width={40}
+              height={40}
+              className="w-10 h-10 rounded-full object-cover border-2 border-white mr-3 cursor-pointer hover:opacity-80 transition-opacity"
+            />
+          </Link>
           <div>
-            <h3 className="font-bold text-lg">@{videoData.username}</h3>
+            <Link href={`/${videoData.userId || videoData.username}`}>
+              <h3 className="font-bold text-lg cursor-pointer hover:opacity-80 transition-opacity">@{videoData.username}</h3>
+            </Link>
             <p className="text-xs text-gray-200">{videoData.music}</p>
           </div>
         </div>

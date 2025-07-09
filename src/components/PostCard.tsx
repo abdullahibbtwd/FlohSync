@@ -10,6 +10,7 @@ import {
   X,
 } from "lucide-react";
 import type { Comment as PostComment } from '../../Data';
+import Link from "next/link";
 
 export interface PostCardImage {
   id: number | string;
@@ -21,6 +22,7 @@ export interface PostCardProps {
     name: string;
     profileImage: string;
     status?: string;
+    userId?: string;
   };
   time: string;
   text: string;
@@ -102,20 +104,43 @@ const PostCard: React.FC<PostCardProps> = ({
       {/* The heading section */}
       <div className="flex w-full items-center justify-between border-b-1   dark:border-gray-300 ">
         <div className="flex gap-2 items-center">
-          <div
-            className="w-8 h-8 flex justify-center items-center rounded-full p-0.5"
-            style={{ backgroundColor: "var(--primary-bg)" }}
-          >
-            <Image
-              src={user.profileImage}
-              alt={user.name}
-              width={30}
-              height={30}
-              className="object-cover w-full h-full cursor-pointer rounded-full"
-            />
-          </div>
+          {user.userId ? (
+            <Link href={`/${user.userId}`}>
+              <div
+                className="w-8 h-8 flex justify-center items-center rounded-full p-0.5 hover:opacity-80 transition"
+                style={{ backgroundColor: "var(--primary-bg)" }}
+              >
+                <Image
+                  src={user.profileImage}
+                  alt={user.name}
+                  width={30}
+                  height={30}
+                  className="object-cover w-full h-full cursor-pointer rounded-full"
+                />
+              </div>
+            </Link>
+          ) : (
+            <div
+              className="w-8 h-8 flex justify-center items-center rounded-full p-0.5"
+              style={{ backgroundColor: "var(--primary-bg)" }}
+            >
+              <Image
+                src={user.profileImage}
+                alt={user.name}
+                width={30}
+                height={30}
+                className="object-cover w-full h-full rounded-full"
+              />
+            </div>
+          )}
           <div className="flex flex-col ">
-            <p className="font-semibold cursor-pointer">{user.name}</p>
+            {user.userId ? (
+              <Link href={`/${user.userId}`}>
+                <p className="font-semibold cursor-pointer hover:text-[var(--accent)] transition">{user.name}</p>
+              </Link>
+            ) : (
+              <p className="font-semibold">{user.name}</p>
+            )}
             {user.status && <span className="italic text-green-600">{user.status}</span>}
           </div>
         </div>

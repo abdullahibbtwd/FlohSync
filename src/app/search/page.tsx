@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
-import { Search } from "lucide-react";
+import { Search, ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 const MOCK_USERS = [
   { id: 1, name: "Alice", username: "alice" },
@@ -27,6 +28,7 @@ export default function SearchPage() {
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<"users" | "posts" | "videos">("users");
   const [searched, setSearched] = useState(false);
+  const router = useRouter();
 
   const filteredUsers = query
     ? MOCK_USERS.filter(
@@ -79,11 +81,26 @@ export default function SearchPage() {
     setSearched(true);
   };
 
+  const handleBack = () => {
+    router.back();
+  };
+
   return (
     <div
       className="min-h-screen -pt-24 flex flex-col items-center px-4 py-10"
       style={{ background: "var(--primary-bg)", color: "var(--primary-text)" }}
     >
+      {/* Back Button */}
+      <div className="w-full max-w-lg mb-4">
+        <button
+          onClick={handleBack}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+          style={{ color: "var(--primary-text)" }}
+        >
+          <ArrowLeft size={20} />
+          <span className="font-medium">Back</span>
+        </button>
+      </div>
       <form
         className="w-full max-w-lg flex gap-2 mb-8"
         onSubmit={handleSearch}

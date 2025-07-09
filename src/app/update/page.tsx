@@ -1,9 +1,9 @@
-import React from 'react'
+import Update from '@/components/Update'
 
 const page = () => {
   return (
     <div>
-      Update
+      <Update />
     </div>
   )
 }

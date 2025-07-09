@@ -1,0 +1,351 @@
+"use client";
+import React, { useState } from 'react';
+import { users } from '../../../Data';
+import { notFound } from 'next/navigation';
+import Image from 'next/image';
+import { ArrowLeft, MapPin, Phone, UserPlus, UserCheck, UserX, MessageCircle, MoreHorizontal } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import PostCard from '../../components/PostCard';
+
+interface UserProfilePageProps {
+  params: Promise<{
+    userId: string;
+  }>;
+}
+
+function getRelativeTime(dateString: string) {
+  const now = new Date();
+  const date = new Date(dateString);
+  const diff = now.getTime() - date.getTime();
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  const weeks = Math.floor(days / 7);
+  const months = Math.floor(days / 30);
+  const years = Math.floor(days / 365);
+
+  if (years > 0) return `${years} year${years > 1 ? 's' : ''} ago`;
+  if (months > 0) return `${months} month${months > 1 ? 's' : ''} ago`;
+  if (weeks > 0) return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+  if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+  if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+  return 'just now';
+}
+
+const UserProfilePage: React.FC<UserProfilePageProps> = ({ params }) => {
+  const { userId } = React.use(params);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [activeTab, setActiveTab] = useState<'posts' | 'videos' | 'photos'>('posts');
+  const router = useRouter();
+
+  // Find the user by ID
+  const user = users.users.find(u => u.user_id === userId);
+  const currentUser = users.users.find(u => u.user_id === users.current_user_id);
+
+  if (!user) {
+    notFound();
+  }
+
+  // Check if current user is following this user
+  const isCurrentUserFollowing = currentUser?.following.includes(userId) || false;
+  const isCurrentUser = userId === users.current_user_id;
+
+  // Transform user posts to match PostCard format
+  const userPosts = user.posts.map(post => ({
+    id: post.post_id,
+    user: {
+      name: user.name,
+      profileImage: user.profile_picture,
+    },
+    content: post.content,
+    contentImage: post.image ? [{ id: post.post_id, image: post.image }] : [],
+    likes: Math.floor(Math.random() * 50) + 5,
+    likedBy: [],
+    comments: [],
+    createdAt: post.timestamp,
+  })).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  // Filter posts by type
+  const regularPosts = userPosts.filter(post => !post.contentImage.length && !post.content.includes('video'));
+  const photoPosts = userPosts.filter(post => post.contentImage.length > 0);
+  const videoPosts = user.posts
+    .filter(post => post.video)
+    .map(post => ({
+      id: post.post_id,
+      user: {
+        name: user.name,
+        profileImage: user.profile_picture,
+      },
+      content: post.content,
+      video: post.video,
+      likes: Math.floor(Math.random() * 50) + 5,
+      createdAt: post.timestamp,
+    }))
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const handleFollow = () => {
+    setIsFollowing(!isFollowing);
+    // Here you would typically update the backend
+    alert(isFollowing ? `Unfollowed ${user.name}` : `Started following ${user.name}`);
+  };
+
+  const handleMessage = () => {
+    // Navigate to chat with this user
+    router.push(`/chat?user=${user.user_id}`);
+  };
+
+  const getRelationStatusText = () => {
+    if (isCurrentUser) return "You";
+    if (isCurrentUserFollowing) return "Following";
+    if (user.followers.includes(users.current_user_id)) return "Follows you";
+    return "Not connected";
+  };
+
+  const getActionButton = () => {
+    if (isCurrentUser) {
+      return (
+        <button className="px-6 py-2 bg-[var(--accent)] text-white rounded-full hover:bg-[var(--accent)/80] transition">
+          Edit Profile
+        </button>
+      );
+    }
+
+    if (isCurrentUserFollowing) {
+      return (
+        <button 
+          onClick={handleFollow}
+          className="px-6 py-2 bg-gray-200 dark:bg-gray-700  text-gray-800 dark:text-gray-200 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+        >
+          <UserCheck className="w-4 h-4 inline mr-2" />
+          Following
+        </button>
+      );
+    }
+
+    return (
+      <button 
+        onClick={handleFollow}
+        className="px-6 py-2 bg-[var(--accent)] text-black hover:text-white rounded-full hover:bg-[var(--accent)/80] transition"
+      >
+        <UserPlus className="w-4 h-4 inline mr-2" />
+        Follow
+      </button>
+    );
+  };
+
+  const getTabContent = () => {
+    switch (activeTab) {
+      case 'posts':
+        return regularPosts;
+      case 'photos':
+        return photoPosts;
+      case 'videos':
+        return videoPosts;
+      default:
+        return regularPosts;
+    }
+  };
+
+  const getTabCount = (tab: 'posts' | 'videos' | 'photos') => {
+    switch (tab) {
+      case 'posts':
+        return regularPosts.length;
+      case 'photos':
+        return photoPosts.length;
+      case 'videos':
+        return videoPosts.length;
+      default:
+        return 0;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[var(--primary-bg)]">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-[var(--secondary-bg)] border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between p-4">
+          <Link href="/" className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white transition">
+            <ArrowLeft className="w-5 h-5" />
+            <span>Back</span>
+          </Link>
+          <h1 className="text-lg font-semibold">{user.name}</h1>
+          <div className="relative">
+            <button 
+              onClick={() => setShowMenu(!showMenu)}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition"
+            >
+              <MoreHorizontal className="w-5 h-5" />
+            </button>
+            {showMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+                <button className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700">Report</button>
+                <button className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500">Block</button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Profile Section */}
+      <div className="p-4">
+        <div className="bg-[var(--secondary-bg)] rounded-lg p-6 mb-6">
+          <div className="flex flex-col md:flex-row gap-6">
+            {/* Profile Picture */}
+            <div className="flex-shrink-0">
+              <Image
+                src={user.profile_picture}
+                alt={user.name}
+                width={120}
+                height={120}
+                className="w-32 h-32 rounded-full object-cover border-4 border-white dark:border-gray-700 shadow-lg"
+              />
+            </div>
+
+            {/* Profile Info */}
+            <div className="flex-1">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+                <div>
+                  <h2 className="text-2xl font-bold mb-1">{user.name}</h2>
+                  <p className=" mb-2">@{user.username}</p>
+                  <div className="flex items-center gap-4 text-sm ">
+                    <div className="flex items-center gap-1">
+                      <MapPin className="w-4 h-4" />
+                      <span>{user.location}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Phone className="w-4 h-4" />
+                      <span>{user.phone_number}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                  {getActionButton()}
+                  {!isCurrentUser && (
+                    <button 
+                      onClick={handleMessage}
+                      className="px-6 py-2 border border-[var(--accent)] hover:text-black text-[var(--accent)] rounded-full hover:bg-[var(--accent)]  transition"
+                    >
+                      <MessageCircle className="w-4 h-4 inline mr-2" />
+                      Message
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div className="flex gap-6 text-sm">
+                <div>
+                  <span className="font-semibold">{user.posts.length}</span>
+                  <span className=" ml-1">posts</span>
+                </div>
+                <div>
+                  <span className="font-semibold">{user.followers.length}</span>
+                  <span className=" ml-1">followers</span>
+                </div>
+                <div>
+                  <span className="font-semibold">{user.following.length}</span>
+                  <span className=" ml-1">following</span>
+                </div>
+                <div>
+                  <span className="">{getRelationStatusText()}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Content Navigation Tabs */}
+      <div className="bg-[var(--secondary-bg)] rounded-lg p-4 mb-6">
+        <div className="flex space-x-1">
+          <button
+            onClick={() => setActiveTab('posts')}
+            className={`flex-1 py-2 px-4 rounded-lg font-medium transition ${
+              activeTab === 'posts'
+                ? 'bg-[var(--accent)] text-black'
+                : ''
+            }`}
+          >
+            Posts ({getTabCount('posts')})
+          </button>
+          <button
+            onClick={() => setActiveTab('photos')}
+            className={`flex-1  py-2 px-2 rounded-lg font-medium transition ${
+              activeTab === 'photos'
+                ? 'bg-[var(--accent)] text-black'
+                : ''
+            }`}
+          >
+            Photos ({getTabCount('photos')})
+          </button>
+          <button
+            onClick={() => setActiveTab('videos')}
+            className={`flex-1 py-2 px-4 rounded-lg font-medium transition ${
+              activeTab === 'videos'
+                ? 'bg-[var(--accent)] text-black'
+                : ''
+            }`}
+          >
+            Videos ({getTabCount('videos')})
+          </button>
+        </div>
+      </div>
+
+      {/* Content Section */}
+      <div className="space-y-4">
+        {getTabContent().length === 0 ? (
+          <div className="text-center py-12 ">
+            <p>No {activeTab} yet</p>
+          </div>
+        ) : activeTab === 'videos' ? (
+          // Video content display
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {getTabContent().map((video: any) => (
+              <div key={video.id} className="bg-[var(--secondary-bg)] rounded-lg overflow-hidden">
+                <video
+                  src={video.video?.videoUrl || "/test.mp4"}
+                  className="w-full h-48 object-cover"
+                  controls
+                />
+                <div className="p-4">
+                  <p className="text-sm  mb-2">{video.content}</p>
+                  <div className="flex items-center justify-between text-xs ">
+                    <span>{getRelativeTime(video.createdAt)}</span>
+                    <span>{video.likes} likes</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          // Posts and Photos content display
+          getTabContent().map((post: any) => (
+            <PostCard
+              key={post.id}
+              user={{
+                name: post.user.name,
+                profileImage: post.user.profileImage,
+                status: undefined
+              }}
+              time={getRelativeTime(post.createdAt)}
+              text={post.content}
+              images={post.contentImage}
+              likeCount={post.likes}
+              commentCount={post.comments.length}
+              liked={false}
+              bookmarked={false}
+              comments={post.comments}
+            />
+          ))
+        )}
+      </div>
+      </div>
+    </div>
+  );
+};
+
+export default UserProfilePage;

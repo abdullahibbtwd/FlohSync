@@ -1,5 +1,5 @@
 import React from 'react'
-import { posts } from '../../Data'
+import { users } from '../../Data'
 import PostCard from './PostCard'
 import { Image as ImageIcon } from 'lucide-react'
 import Image from 'next/image'
@@ -27,20 +27,42 @@ function getRelativeTime(dateString: string) {
 }
 
 const Post = () => {
-  const currentUser = posts[0]?.user;
+  const currentUser = users.users.find(user => user.user_id === users.current_user_id);
+  
+  // Transform user posts to match the expected format
+  const allPosts = users.users.flatMap(user => 
+    user.posts.map(post => ({
+      id: post.post_id,
+      user: {
+        name: user.name,
+        profileImage: user.profile_picture,
+        userId: user.user_id,
+      },
+      content: post.content,
+      contentImage: post.image ? [{ id: post.post_id, image: post.image }] : [],
+      likes: Math.floor(Math.random() * 50) + 5, // Random likes for demo
+      likedBy: [],
+      comments: [], // Empty comments array for now
+      createdAt: post.timestamp,
+      video: post.video
+    }))
+  ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
   return (
     <div className="flex justify-center mt-15 items-center w-full">
       <div className="flex flex-col justify-center items-center gap-3 md:p-3 w-full md:w-4/5 lg:w-3/4 xl:w-2/3 max-w-2xl">
         {/* Create Post Section */}
         
           <div className="flex items-center w-full gap-3 bg-[var(--secondary-bg)] rounded-lg p-4 mb-4 shadow cursor-pointer hover:bg-[var(--accent)/10] transition">
-            <Image
-              src={currentUser?.profileImage}
-              alt="profile"
-              width={40}
-              height={40}
-              className="w-10 h-10 rounded-full object-cover"
-            />
+            <Link href="/profile">
+              <Image
+                src={currentUser?.profile_picture || "https://picsum.photos/id/237/200/300"}
+                alt="profile"
+                width={40}
+                height={40}
+                className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+              />
+            </Link>
            
               <Link href="/create-post" className="w-8/10 md:w-9/10">
              <div  className='flex  gap-2 justify-between w-full'>
@@ -59,12 +81,13 @@ const Post = () => {
           </div>
       
         {/* Posts List */}
-        {posts.map(post => (
+        {allPosts.map(post => (
           <PostCard
             key={post.id}
             user={{
               name: post.user.name,
               profileImage: post.user.profileImage,
+              userId: post.user.userId,
               status: undefined // or set a status if you have one
             }}
             time={getRelativeTime(post.createdAt)}
