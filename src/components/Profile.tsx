@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { 
   ArrowLeft, 
-  Edit3, 
   Settings, 
   MoreHorizontal, 
   Grid3X3, 
@@ -10,38 +9,33 @@ import {
   Heart,
   MessageCircle,
   Share2,
-  UserPlus,
-  UserCheck,
+
   MapPin,
   Phone,
   Mail,
   Calendar,
   Camera,
-  Image as ImageIcon,
   Video,
-  Users,
-  User,
   Lock
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-
+import {useAppContext} from "../context/useAppContext";
 const Profile = () => {
   const [activeTab, setActiveTab] = useState('posts');
-  const [isFollowing, setIsFollowing] = useState(false);
+  //const [isFollowing, setIsFollowing] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-
-  // Mock user data - replace with real data from your backend
+  const {userData} = useAppContext();
   const user = {
     id: '1',
-    name: 'John Doe',
-    username: 'johndoe',
+    name: userData?.name,
+    username: userData?.username,
     bio: 'Living life one post at a time ✨ | Photography enthusiast 📸 | Coffee lover ☕',
     profilePicture: 'https://picsum.photos/id/1005/300/300',
     coverPhoto: 'https://picsum.photos/id/1018/800/300',
     location: 'New York, NY',
     phone: '+1 234 567 8900',
-    email: 'john@example.com',
+    email: userData?.email,
     joinedDate: '2023-01-15',
     followers: 1247,
     following: 892,
@@ -108,24 +102,24 @@ const Profile = () => {
     }
   ];
 
-  const handleFollow = () => {
-    setIsFollowing(!isFollowing);
-  };
+  // const handleFollow = () => {
+  //   setIsFollowing(!isFollowing);
+  // };
 
-  const getRelativeTime = (dateString: string) => {
-    const now = new Date();
-    const date = new Date(dateString);
-    const diff = now.getTime() - date.getTime();
-    const seconds = Math.floor(diff / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
+  // const getRelativeTime = (dateString: string) => {
+  //   const now = new Date();
+  //   const date = new Date(dateString);
+  //   const diff = now.getTime() - date.getTime();
+  //   const seconds = Math.floor(diff / 1000);
+  //   const minutes = Math.floor(seconds / 60);
+  //   const hours = Math.floor(minutes / 60);
+  //   const days = Math.floor(hours / 24);
 
-    if (days > 0) return `${days}d`;
-    if (hours > 0) return `${hours}h`;
-    if (minutes > 0) return `${minutes}m`;
-    return 'now';
-  };
+  //   if (days > 0) return `${days}d`;
+  //   if (hours > 0) return `${hours}h`;
+  //   if (minutes > 0) return `${minutes}m`;
+  //   return 'now';
+  // };
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
@@ -181,7 +175,7 @@ const Profile = () => {
           <div className="relative">
             <Image
               src={user.profilePicture}
-              alt={user.name}
+              alt="profile"
               width={120}
               height={120}
               className="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-white dark:border-gray-800 object-cover"

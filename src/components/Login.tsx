@@ -1,95 +1,156 @@
-"use client"
-import React, { useState } from 'react';
-import { 
-  Eye, 
-  EyeOff, 
-  Mail, 
-  Lock, 
-  User, 
-  Phone, 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+import React, { useState } from "react";
+import {
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  User,
   ArrowRight,
-  ArrowLeft,
-  CheckCircle,
-  AlertCircle
-} from 'lucide-react';
-import Image from 'next/image';
-
+  AlertCircle,
+} from "lucide-react";
+import axios from "axios";
+import { toast } from "sonner";
+import { useAppContext } from "@/context/useAppContext";
+import { GetServerSideProps } from 'next';
+import nookies from 'nookies';
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const cookies = nookies.get(ctx);
+  if (cookies.authToken) {
+    return {
+      redirect: {
+        destination: '/',
+        permanent: false,
+      },
+    };
+  }
+  return { props: {} };
+};
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    name: '',
-    phone: ''
+    email: "",
+    password: "",
+    confirmPassword: "",
+    name: "",
+    username: "",
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<any>({});
+  const { router } = useAppContext();
+  type Errors = {
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+    name?: string;
+    username?: string;
+  };
+  const [errors, setErrors] = useState<Errors>({});
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
+
+    // Clear the error for the current field as the user types
+    if (errors[name as keyof typeof errors]) {
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        [name]: "",
       }));
     }
   };
 
   const validateForm = () => {
-    const newErrors: any = {};
+    const newErrors: Errors = {};
 
     if (isLogin) {
-      if (!formData.email) newErrors.email = 'Email is required';
-      if (!formData.password) newErrors.password = 'Password is required';
+      if (!formData.username) newErrors.username = "Username is required";
+      if (!formData.password) newErrors.password = "Password is required";
     } else {
-      if (!formData.name) newErrors.name = 'Name is required';
-      if (!formData.email) newErrors.email = 'Email is required';
-      if (!formData.phone) newErrors.phone = 'Phone is required';
-      if (!formData.password) newErrors.password = 'Password is required';
-      if (!formData.confirmPassword) newErrors.confirmPassword = 'Please confirm your password';
+      if (!formData.name) newErrors.name = "Name is required";
+      if (!formData.email) newErrors.email = "Email is required";
+      if (!formData.username) newErrors.username = "Username is required";
+      if (!formData.password) newErrors.password = "Password is required";
+      if (!formData.confirmPassword)
+        newErrors.confirmPassword = "Please confirm your password";
       if (formData.password !== formData.confirmPassword) {
-        newErrors.confirmPassword = 'Passwords do not match';
+        newErrors.confirmPassword = "Passwords do not match";
       }
       if (formData.password.length < 6) {
-        newErrors.password = 'Password must be at least 6 characters';
+        newErrors.password = "Password must be at least 6 characters";
       }
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL!;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) return;
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!validateForm()) return;
+  setIsLoading(true);
 
-    setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      console.log(isLogin ? 'Logging in...' : 'Registering...', formData);
-      setIsLoading(false);
-      // Here you would typically handle the response
-    }, 2000);
-  };
+  try {
+    if (!isLogin) {
+      // Registration
+      const { data } = await axios.post(
+        backendUrl + "/api/auth/register",
+        {
+          name: formData.name,
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+        },
+        { withCredentials: true }
+      );
+      if (data.success) {
+        toast.success(data.message);
+      } else {
+        toast.error(data.message || "An error occurred");
+      }
+    } else {
+      // Login
+      const response = await axios.post(
+        backendUrl + "/api/auth/login",
+        {
+          username: formData.username,
+          password: formData.password,
+        },
+        { withCredentials: true }
+      );
+      if (response.status === 201) {
+        toast.success(response.data.message || "Success!");
+        router.replace('/')
+      } else {
+        toast.error(response.data.message || "An error occurred");
+      }
+    }
+  } catch (error: any) {
+    if (error.response) {
+      // Handles 409 and other non-2xx errors
+      toast.error(error.response.data.message || "An error occurred");
+    } else {
+      toast.error("Network error");
+    }
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const toggleMode = () => {
     setIsLogin(!isLogin);
     setFormData({
-      email: '',
-      password: '',
-      confirmPassword: '',
-      name: '',
-      phone: ''
+      email: "",
+      password: "",
+      confirmPassword: "",
+      name: "",
+      username: "",
     });
     setErrors({});
   };
@@ -106,7 +167,7 @@ const Login = () => {
             FlohSync
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
-            {isLogin ? 'Welcome back!' : 'Join our community'}
+            {isLogin ? "Welcome back!" : "Join our community"}
           </p>
         </div>
 
@@ -114,7 +175,7 @@ const Login = () => {
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 relative overflow-hidden">
           {/* Animated Background */}
           <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-green-900/10 transform -skew-y-6 translate-y-8"></div>
-          
+
           <div className="relative z-10">
             {/* Mode Toggle */}
             <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 mb-8">
@@ -122,8 +183,8 @@ const Login = () => {
                 onClick={() => !isLogin && toggleMode()}
                 className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-300 ${
                   isLogin
-                    ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                 }`}
               >
                 Sign In
@@ -132,8 +193,8 @@ const Login = () => {
                 onClick={() => isLogin && toggleMode()}
                 className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-300 ${
                   !isLogin
-                    ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                 }`}
               >
                 Sign Up
@@ -143,7 +204,13 @@ const Login = () => {
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Name Field (Register only) */}
-              <div className={`transition-all duration-500 ${isLogin ? 'h-0 opacity-0 overflow-hidden' : 'h-auto opacity-100'}`}>
+              <div
+                className={`transition-all duration-500 ${
+                  isLogin
+                    ? "h-0 opacity-0 overflow-hidden"
+                    : "h-auto opacity-100"
+                }`}
+              >
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Full Name
                 </label>
@@ -155,7 +222,9 @@ const Login = () => {
                     value={formData.name}
                     onChange={handleInputChange}
                     className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
-                      errors.name ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      errors.name
+                        ? "border-red-500"
+                        : "border-gray-300 dark:border-gray-600"
                     } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
                     placeholder="Enter your full name"
                   />
@@ -168,34 +237,42 @@ const Login = () => {
                 </div>
               </div>
 
-              {/* Phone Field (Register only) */}
-              <div className={`transition-all duration-500 ${isLogin ? 'h-0 opacity-0 overflow-hidden' : 'h-auto opacity-100'}`}>
+              {/* Username Field (Register only) */}
+              <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Phone Number
+                  Username
                 </label>
                 <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
+                    type="text"
+                    name="username"
+                    value={formData.username}
                     onChange={handleInputChange}
                     className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
-                      errors.phone ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      errors.username
+                        ? "border-red-500"
+                        : "border-gray-300 dark:border-gray-600"
                     } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
-                    placeholder="Enter your phone number"
+                    placeholder="Enter your Username"
                   />
-                  {errors.phone && (
+                  {errors.username && (
                     <div className="flex items-center gap-1 mt-1 text-red-500 text-sm">
                       <AlertCircle className="w-4 h-4" />
-                      {errors.phone}
+                      {errors.username}
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Email Field */}
-              <div>
+              <div
+                className={`transition-all duration-500 ${
+                  isLogin
+                    ? "h-0 opacity-0 overflow-hidden"
+                    : "h-auto opacity-100"
+                }`}
+              >
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Email Address
                 </label>
@@ -207,7 +284,9 @@ const Login = () => {
                     value={formData.email}
                     onChange={handleInputChange}
                     className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
-                      errors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      errors.email
+                        ? "border-red-500"
+                        : "border-gray-300 dark:border-gray-600"
                     } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
                     placeholder="Enter your email"
                   />
@@ -228,12 +307,14 @@ const Login = () => {
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
                     name="password"
                     value={formData.password}
                     onChange={handleInputChange}
                     className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
-                      errors.password ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      errors.password
+                        ? "border-red-500"
+                        : "border-gray-300 dark:border-gray-600"
                     } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
                     placeholder="Enter your password"
                   />
@@ -242,7 +323,11 @@ const Login = () => {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
                   </button>
                   {errors.password && (
                     <div className="flex items-center gap-1 mt-1 text-red-500 text-sm">
@@ -254,19 +339,27 @@ const Login = () => {
               </div>
 
               {/* Confirm Password Field (Register only) */}
-              <div className={`transition-all duration-500 ${isLogin ? 'h-0 opacity-0 overflow-hidden' : 'h-auto opacity-100'}`}>
+              <div
+                className={`transition-all duration-500 ${
+                  isLogin
+                    ? "h-0 opacity-0 overflow-hidden"
+                    : "h-auto opacity-100"
+                }`}
+              >
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Confirm Password
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
-                    type={showConfirmPassword ? 'text' : 'password'}
+                    type={showConfirmPassword ? "text" : "password"}
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
                     className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
-                      errors.confirmPassword ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      errors.confirmPassword
+                        ? "border-red-500"
+                        : "border-gray-300 dark:border-gray-600"
                     } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
                     placeholder="Confirm your password"
                   />
@@ -275,7 +368,11 @@ const Login = () => {
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                   >
-                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showConfirmPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
                   </button>
                   {errors.confirmPassword && (
                     <div className="flex items-center gap-1 mt-1 text-red-500 text-sm">
@@ -295,11 +392,11 @@ const Login = () => {
                 {isLoading ? (
                   <div className="flex items-center justify-center gap-2">
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    {isLogin ? 'Signing In...' : 'Creating Account...'}
+                    {isLogin ? "Signing In..." : "Creating Account..."}
                   </div>
                 ) : (
                   <div className="flex items-center justify-center gap-2">
-                    {isLogin ? 'Sign In' : 'Create Account'}
+                    {isLogin ? "Sign In" : "Create Account"}
                     <ArrowRight className="w-5 h-5" />
                   </div>
                 )}
@@ -310,7 +407,7 @@ const Login = () => {
             <div className="mt-6 text-center">
               {isLogin ? (
                 <p className="text-gray-600 dark:text-gray-400">
-                  Don't have an account?{' '}
+                  Don&apos;t have an account?{" "}
                   <button
                     onClick={toggleMode}
                     className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 font-medium transition-colors"
@@ -320,7 +417,7 @@ const Login = () => {
                 </p>
               ) : (
                 <p className="text-gray-600 dark:text-gray-400">
-                  Already have an account?{' '}
+                  Already have an account?{" "}
                   <button
                     onClick={toggleMode}
                     className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 font-medium transition-colors"
@@ -344,11 +441,13 @@ const Login = () => {
 
         {/* Footer */}
         <div className="text-center mt-8 text-gray-500 dark:text-gray-400 text-sm">
-          <p>By continuing, you agree to our Terms of Service and Privacy Policy</p>
+          <p>
+            By continuing, you agree to our Terms of Service and Privacy Policy
+          </p>
         </div>
       </div>
     </div>
   );
 };
 
-export default Login; 
+export default Login;

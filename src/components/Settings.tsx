@@ -25,6 +25,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import Image from 'next/image';
+import { useAppContext } from '../context/useAppContext';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('profile');
@@ -38,6 +39,7 @@ const Settings = () => {
     messages: true,
     posts: true
   });
+  const {userData} = useAppContext()
   const [privacy, setPrivacy] = useState({
     profileVisibility: 'public',
     showOnlineStatus: true,
@@ -45,18 +47,46 @@ const Settings = () => {
     showLastSeen: true
   });
   const [profileData, setProfileData] = useState({
-    name: 'John Doe',
-    username: 'johndoe',
-    bio: 'Living life one post at a time ✨',
-    email: 'john@example.com',
-    phone: '+1 234 567 8900',
-    location: 'New York, NY'
+    name: userData?.name,
+    username: userData?.username,
+    bio: userData?.bio,
+    email: userData?.email,
+    phone: userData?.phone,
+    location: userData?.location
   });
+  const [coverImage, setCoverImage] = useState<string>('https://picsum.photos/id/1018/800/300');
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [profileImage, setProfileImage] = useState<string>('https://picsum.photos/id/1005/150/150');
+  const [profileFile, setProfileFile] = useState<File | null>(null);
+
+  const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setCoverFile(file);
+      setCoverImage(URL.createObjectURL(file));
+    }
+  };
+
+  const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setProfileFile(file);
+      setProfileImage(URL.createObjectURL(file));
+    }
+  };
 
   const handleSaveProfile = () => {
     setIsEditing(false);
-    // Here you would typically save to backend
+
     console.log('Profile saved:', profileData);
+    if (coverFile) {
+
+      console.log('Cover image file:', coverFile);
+    }
+    if (profileFile) {
+ 
+      console.log('Profile image file:', profileFile);
+    }
   };
 
   const handleDeleteAccount = () => {
@@ -149,21 +179,61 @@ const Settings = () => {
                 )}
               </div>
 
+              {/* Cover Image Section */}
+              <div className="bg-[var(--secondary-bg)] rounded-lg p-6 mb-6">
+                <div className="flex items-center gap-6">
+                  <div className="relative w-full">
+                    <Image
+                      src={coverImage}
+                      alt="Cover"
+                      width={800}
+                      height={300}
+                      className="w-full h-32 md:h-48 object-cover rounded-lg"
+                    />
+                    {isEditing && (
+                      <div className="absolute bottom-2 right-7">
+                        <label className="p-2 rounded-full hover:bg-[var(--accent)/80] transition cursor-pointer">
+                          <Camera className="w-4 h-4" />
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleCoverImageChange}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-1">Cover Image</h3>
+                    <p className="text-sm">Upload a new cover image</p>
+                  </div>
+                </div>
+              </div>
+
               {/* Profile Picture */}
               <div className="bg-[var(--secondary-bg)] rounded-lg p-6">
                 <div className="flex items-center gap-6">
                   <div className="relative">
                     <Image
-                      src="https://picsum.photos/id/1005/150/150"
+                      src={profileImage}
                       alt="Profile"
                       width={100}
                       height={100}
                       className="w-24 h-24 rounded-full object-cover"
                     />
                     {isEditing && (
-                      <button className="absolute bottom-0 right-0 bg-[var(--accent)] p-2 rounded-full hover:bg-[var(--accent)/80] transition">
-                        <Camera className="w-4 h-4" />
-                      </button>
+                      <div className="absolute -bottom-3 -right-3">
+                        <label className="p-2 rounded-full hover:bg-[var(--accent)/80] transition cursor-pointer">
+                          <Camera className="w-4 h-4" />
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleProfileImageChange}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
                     )}
                   </div>
                   <div>
@@ -309,7 +379,7 @@ const Settings = () => {
                   <label className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Show Online Status</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">Let others see when you're online</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">Let others see when you&apos;re online</div>
                     </div>
                     <input
                       type="checkbox"
