@@ -8,7 +8,6 @@ import {
   Moon, 
   Sun, 
   Eye, 
-  EyeOff, 
   Camera, 
   Edit3, 
   Save, 
@@ -21,10 +20,10 @@ import {
   Smartphone,
   Mail,
   Volume2,
-  VolumeX,
   ArrowLeft
 } from 'lucide-react';
 import Image from 'next/image';
+import axios from 'axios';
 import { useAppContext } from '../context/useAppContext';
 
 const Settings = () => {
@@ -47,18 +46,18 @@ const Settings = () => {
     showLastSeen: true
   });
   const [profileData, setProfileData] = useState({
-    name: userData?.name,
-    username: userData?.username,
-    bio: userData?.bio,
-    email: userData?.email,
-    phone: userData?.phone,
-    location: userData?.location
+    name: userData?.name || '',
+    username: userData?.username || '',
+    bio: userData?.bio || '',
+    email: userData?.email || '',
+    phone: userData?.phone || '',
+    location: userData?.location || ''
   });
-  const [coverImage, setCoverImage] = useState<string>('https://picsum.photos/id/1018/800/300');
+  const [coverImage, setCoverImage] = useState<string>(userData?.coverPicture || "https://picsum.photos/id/1018/800/300");
   const [coverFile, setCoverFile] = useState<File | null>(null);
-  const [profileImage, setProfileImage] = useState<string>('https://picsum.photos/id/1005/150/150');
+  const [profileImage, setProfileImage] = useState<string>(userData?.profilePicture || "https://picsum.photos/id/1005/150/150");
   const [profileFile, setProfileFile] = useState<File | null>(null);
-
+const {backendUrl} = useAppContext()
   const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -75,17 +74,49 @@ const Settings = () => {
     }
   };
 
-  const handleSaveProfile = () => {
-    setIsEditing(false);
+  const handleSaveProfile = async () => {
+    try {
+      setIsEditing(false);
+      
+      let coverPicture = userData?.coverPicture;
+      let profilePicture = userData?.profilePicture;
 
-    console.log('Profile saved:', profileData);
-    if (coverFile) {
+      // Convert cover file to base64 if exists
+      if (coverFile) {
+        const reader = new FileReader();
+        coverPicture = await new Promise<string>((resolve) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(coverFile);
+        });
+      }
 
-      console.log('Cover image file:', coverFile);
-    }
-    if (profileFile) {
- 
-      console.log('Profile image file:', profileFile);
+      // Convert profile file to base64 if exists
+      if (profileFile) {
+        const reader = new FileReader();
+        profilePicture = await new Promise<string>((resolve) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(profileFile);
+        });
+      }
+
+      const updateData = {
+        ...profileData,
+        coverPicture,
+        profilePicture
+      };
+
+      const response = await axios.patch(`${backendUrl}/api/user/data`, updateData, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        withCredentials: true
+      });
+
+      console.log('Profile updated successfully:', response.data);
+      
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      setIsEditing(true);
     }
   };
 

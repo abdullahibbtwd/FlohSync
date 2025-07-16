@@ -1,245 +1,22 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import React, { useState } from 'react';
-import { User, Plus, Check, X, Users, UserPlus, Search, ArrowLeft } from 'lucide-react';
+import {  Plus, Check, X, Users, UserPlus, Search, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
+import { useAppContext } from '@/context/useAppContext';
+import axios from "axios"; // Make sure this is imported at the top
+import { toast } from 'sonner';
 
-// Import the real data
-const usersData = {
-  "current_user_id": "user0",
-  "users": [
-    {
-      "user_id": "user0",
-      "name": "Alex Johnson",
-      "username": "alex_j",
-      "phone_number": "+15551234567",
-      "location": "New York, USA",
-      "profile_picture": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-      "followers": ["user1", "user3", "user5", "user6"],
-      "following": ["user1", "user2", "user5"],
-      "posts": [
-        {
-          "post_id": "post0_1",
-          "content": "Enjoying the NYC sunset! 🌇",
-          "image": "https://example.com/posts/sunset.jpg",
-          "video": null,
-          "timestamp": "2025-07-01T19:30:00Z"
-        },
-        {
-          "post_id": "post0_2",
-          "content": "Check out my new vlog!",
-          "image": null,
-          "video": "https://example.com/vlogs/city_tour.mp4",
-          "timestamp": "2025-07-03T14:15:00Z"
-        }
-      ],
-      "relation_status": null
-    },
-    {
-      "user_id": "user1",
-      "name": "Sarah Williams",
-      "username": "sarah_w",
-      "phone_number": "+15552345678",
-      "location": "London, UK",
-      "profile_picture": "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
-      "followers": ["user0", "user2", "user4"],
-      "following": ["user0", "user2", "user3"],
-      "posts": [
-        {
-          "post_id": "post1_1",
-          "content": "Exploring Camden Market today!",
-          "image": "https://example.com/posts/camden.jpg",
-          "video": null,
-          "timestamp": "2025-07-02T12:45:00Z"
-        }
-      ],
-      "relation_status": "friend"
-    },
-    {
-      "user_id": "user2",
-      "name": "Mike Chen",
-      "username": "mike_c",
-      "phone_number": "+15553456789",
-      "location": "Tokyo, Japan",
-      "profile_picture": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
-      "followers": ["user0", "user1", "user4", "user6"],
-      "following": ["user1", "user3"],
-      "posts": [
-        {
-          "post_id": "post2_1",
-          "content": "Sushi making class!",
-          "image": "https://example.com/posts/sushi.jpg",
-          "video": null,
-          "timestamp": "2025-06-28T11:20:00Z"
-        },
-        {
-          "post_id": "post2_2",
-          "content": "Shinjuku night walk",
-          "image": null,
-          "video": "https://example.com/vlogs/tokyo_night.mp4",
-          "timestamp": "2025-07-04T20:40:00Z"
-        }
-      ],
-      "relation_status": "request_sent"
-    },
-    {
-      "user_id": "user3",
-      "name": "Emma Rodriguez",
-      "username": "emma_r",
-      "phone_number": "+15554567890",
-      "location": "Miami, USA",
-      "profile_picture": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face",
-      "followers": ["user0", "user1", "user2", "user5"],
-      "following": ["user0"],
-      "posts": [
-        {
-          "post_id": "post3_1",
-          "content": "Beach day! ☀️",
-          "image": "https://example.com/posts/miami_beach.jpg",
-          "video": null,
-          "timestamp": "2025-07-05T13:10:00Z"
-        }
-      ],
-      "relation_status": "request_received"
-    },
-    {
-      "user_id": "user4",
-      "name": "David Kim",
-      "username": "david_k",
-      "phone_number": "+15555678901",
-      "location": "Seoul, South Korea",
-      "profile_picture": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=face",
-      "followers": ["user1", "user2"],
-      "following": ["user1", "user2"],
-      "posts": [
-        {
-          "post_id": "post4_1",
-          "content": "Gyeongbokgung Palace visit",
-          "image": "https://example.com/posts/palace.jpg",
-          "video": null,
-          "timestamp": "2025-06-30T09:30:00Z"
-        }
-      ],
-      "relation_status": "not_connected"
-    },
-    {
-      "user_id": "user5",
-      "name": "Priya Sharma",
-      "username": "priya_s",
-      "phone_number": "+15556789012",
-      "location": "Mumbai, India",
-      "profile_picture": "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=150&h=150&fit=crop&crop=face",
-      "followers": ["user0", "user3"],
-      "following": ["user0", "user3"],
-      "posts": [
-        {
-          "post_id": "post5_1",
-          "content": "Street food adventure!",
-          "image": "https://example.com/posts/street_food.jpg",
-          "video": null,
-          "timestamp": "2025-07-02T18:00:00Z"
-        },
-        {
-          "post_id": "post5_2",
-          "content": "Diwali preparations",
-          "image": null,
-          "video": "https://example.com/vlogs/diwali_prep.mp4",
-          "timestamp": "2025-07-06T16:45:00Z"
-        }
-      ],
-      "relation_status": "friend"
-    },
-    {
-      "user_id": "user6",
-      "name": "James Wilson",
-      "username": "james_w",
-      "phone_number": "+15557890123",
-      "location": "Sydney, Australia",
-      "profile_picture": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
-      "followers": ["user0"],
-      "following": ["user0", "user2"],
-      "posts": [
-        {
-          "post_id": "post6_1",
-          "content": "Opera House view!",
-          "image": "https://example.com/posts/opera_house.jpg",
-          "video": null,
-          "timestamp": "2025-07-01T10:15:00Z"
-        }
-      ],
-      "relation_status": "request_received"
-    },
-    {
-      "user_id": "user7",
-      "name": "Sophie Martin",
-      "username": "sophie_m",
-      "phone_number": "+15558901234",
-      "location": "Paris, France",
-      "profile_picture": "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
-      "followers": ["user8", "user9"],
-      "following": ["user8", "user9"],
-      "posts": [
-        {
-          "post_id": "post7_1",
-          "content": "Eiffel Tower lunch",
-          "image": "https://example.com/posts/eiffel.jpg",
-          "video": null,
-          "timestamp": "2025-06-29T12:30:00Z"
-        }
-      ],
-      "relation_status": "not_connected"
-    },
-    {
-      "user_id": "user8",
-      "name": "Carlos Silva",
-      "username": "carlos_s",
-      "phone_number": "+15559012345",
-      "location": "Rio de Janeiro, Brazil",
-      "profile_picture": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
-      "followers": ["user7", "user9"],
-      "following": ["user7", "user9"],
-      "posts": [
-        {
-          "post_id": "post8_1",
-          "content": "Carnival preparations!",
-          "image": "https://example.com/posts/carnival.jpg",
-          "video": null,
-          "timestamp": "2025-07-03T11:40:00Z"
-        }
-      ],
-      "relation_status": "not_connected"
-    },
-    {
-      "user_id": "user9",
-      "name": "Aisha Khan",
-      "username": "aisha_k",
-      "phone_number": "+15550123456",
-      "location": "Dubai, UAE",
-      "profile_picture": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face",
-      "followers": ["user7"],
-      "following": ["user7", "user8"],
-      "posts": [
-        {
-          "post_id": "post9_1",
-          "content": "Desert safari adventure",
-          "image": null,
-          "video": "https://example.com/vlogs/desert_safari.mp4",
-          "timestamp": "2025-07-04T09:20:00Z"
-        }
-      ],
-      "relation_status": "not_connected"
-    },
-  ],
-};
 
-// Fuzzy search function
 const fuzzySearch = (searchTerm: string, text: string): boolean => {
   const searchLower = searchTerm.toLowerCase();
   const textLower = text.toLowerCase();
   
-  // Exact match
+  
   if (textLower.includes(searchLower)) return true;
   
-  // Partial word match
+
   const searchWords = searchLower.split(' ').filter(word => word.length > 0);
   const textWords = textLower.split(' ').filter(word => word.length > 0);
   
@@ -252,12 +29,11 @@ const FlowMate = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [pendingRequests, setPendingRequestsState] = useState<any[]>([]);
   const [sentRequests, setSentRequestsState] = useState<any[]>([]);
-  const [showProfile, setShowProfile] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [allUsersData, setAllUsersData] = useState<any[]>([]);
+  const { usersToFollow, backendUrl, getUsersToFollow } = useAppContext();
+  const allUsersData = usersToFollow; // Already fetched from backend
   
   // State for showing more cards
   const [showAllPending, setShowAllPending] = useState(false);
@@ -267,30 +43,14 @@ const FlowMate = () => {
 
   // Process the real data
   React.useEffect(() => {
-    const currentUserId = usersData.current_user_id;
-    const allUsers = usersData.users.filter(user => user.user_id !== currentUserId);
-    
-    const processedUsers = allUsers.map(user => ({
-      id: user.user_id,
-      name: user.name,
-      username: user.username,
-      avatar: user.profile_picture,
-      bio: `Based in ${user.location}. Connect with me!`,
-      mutualFriends: Math.floor(Math.random() * 5) + 1,
-      skills: ["Networking", "Collaboration", "Innovation"],
-      relation_status: user.relation_status
-    }));
-
-    setAllUsersData(processedUsers);
-    
-    const availableUsers = processedUsers.filter(user => user.relation_status === "not_connected");
-    const pendingRequestsData = processedUsers.filter(user => user.relation_status === "request_received");
-    const sentRequestsData = processedUsers.filter(user => user.relation_status === "request_sent");
+    const availableUsers = allUsersData.filter(user => user.relation_status === "not_connected");
+    const pendingRequestsData = allUsersData.filter(user => user.relation_status === "request_received");
+    const sentRequestsData = allUsersData.filter(user => user.relation_status === "request_sent");
 
     setUsers(availableUsers);
     setPendingRequestsState(pendingRequestsData);
     setSentRequestsState(sentRequestsData);
-  }, []);
+  }, [allUsersData]);
 
   const handleSearch = () => {
     if (!searchTerm.trim()) {
@@ -303,7 +63,7 @@ const FlowMate = () => {
     setIsSearching(true);
     setShowAllSearch(false);
     
-    // Search through all users (excluding current user)
+   
     const results = allUsersData.filter(user => 
       fuzzySearch(searchTerm, user.name) || fuzzySearch(searchTerm, user.username)
     );
@@ -324,23 +84,42 @@ const FlowMate = () => {
     setShowAllSearch(false);
   };
 
-  const handleAddFlowMate = (user: any) => {
-    // Create a new user object with updated relation_status
-    const updatedUser = { ...user, relation_status: "request_sent" };
-    
-    setSentRequestsState(prev => [...prev, updatedUser]);
-    setUsers(prev => prev.filter(u => u.id !== user.id));
-    
-    // Update the user in allUsersData as well
-    setAllUsersData(prev => prev.map(u => u.id === user.id ? updatedUser : u));
-    
-    // Show success message
-    alert(`Friend request sent to ${user.name}!`);
+  const handleAddFlowMate = async (user: any) => {
+    try {
+      console.log("Sending follow request for user id:", user.id);
+      const response = await axios.post(
+        `${backendUrl}/api/follow/follows`,
+        { targetUserId: user.id }, 
+        { withCredentials: true }
+      );
+      if (response.data.success) {
+        toast.success(response.data.message || `Friend request sent to ${user.name}!`);
+        // Optionally refresh the users list from backend
+        getUsersToFollow();
+      } else {
+        toast.error(response.data.message || "Failed to send request.");
+      }
+    } catch (error: any) {
+      alert(error?.response?.data?.message || "An error occurred.");
+    }
   };
 
-  const handleAcceptRequest = (user: any) => {
-    setPendingRequestsState(prev => prev.filter(u => u.id !== user.id));
-    alert(`${user.name} is now your Flow Mate!`);
+  const handleAcceptRequest = async (user: any) => {
+    try {
+      const response = await axios.post(
+        `${backendUrl}/api/follow/accept`,
+        { requesterId: user.id },
+        { withCredentials: true }
+      );
+      if (response.data.success) {
+        toast.success(response.data.message || `${user.name} is now your Flow Mate!`);
+        getUsersToFollow();
+      } else {
+        toast.error(response.data.message || "Failed to accept request.");
+      }
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "An error occurred.");
+    }
   };
 
   const handleRejectRequest = (user: any) => {
@@ -356,7 +135,9 @@ const FlowMate = () => {
     setUsers(prev => [...prev, resetUser]); // Add back to available users
     
     // Update the user in allUsersData as well
-    setAllUsersData(prev => prev.map(u => u.id === user.id ? resetUser : u));
+    // This part needs to be handled by the backend or context
+    // For now, we'll just remove it from the current users list
+    setUsers(prev => prev.filter(u => u.id !== user.id));
     
     alert(`Cancelled request to ${user.name}`);
   };
@@ -374,9 +155,11 @@ const FlowMate = () => {
     >
       <div className="flex items-center gap-4 mb-3">
         <Link href={`/${user.id}`}>
-          <img
-            src={user.avatar}
+          <Image
+            src={user.profile_picture || "/user.jpg"}
             alt={user.name}
+            width={48}
+            height={48}
             className="w-12 h-12 rounded-full cursor-pointer hover:opacity-80 transition"
           />
         </Link>
@@ -393,7 +176,7 @@ const FlowMate = () => {
       <p className="text-sm mb-4 line-clamp-2">{user.bio}</p>
       
       {user.relation_status === "request_received" && (
-        <div className="flex gap-2">
+        <div className="flex gap-2" key={user.id}>
           <button
             onClick={() => handleAcceptRequest(user)}
             className="flex items-center gap-2 px-3 py-2 text-sm rounded-md font-medium transition-all duration-200"
@@ -420,7 +203,7 @@ const FlowMate = () => {
       )}
 
       {user.relation_status === "request_sent" && (
-        <div className="flex gap-2">
+        <div className="flex gap-2" key={user.id}>
           <button
             onClick={() => handleCancelRequest(user)}
             className="flex items-center gap-2 px-3 py-2 text-sm rounded-md font-medium border transition-all duration-200"
@@ -473,7 +256,11 @@ const FlowMate = () => {
           </h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {displayUsers.map((user) => renderUserCard(user, showAddButton))}
+          {displayUsers.map((user) => (
+            <React.Fragment key={user.id}>
+              {renderUserCard(user, showAddButton)}
+            </React.Fragment>
+          ))}
         </div>
         {hasMore && (
           <div className="mt-4 text-center">
@@ -587,7 +374,7 @@ const FlowMate = () => {
             </div>
             {searchResults.length === 0 ? (
               <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                <p>No users found matching "{searchTerm}"</p>
+                <p>No users found matching &quot;{searchTerm}&quot;</p>
                 <p className="text-sm mt-2">Try searching with different keywords</p>
               </div>
             ) : (

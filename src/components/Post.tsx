@@ -1,9 +1,11 @@
+"use client"
 import React from 'react'
 import { users } from '../../Data'
 import PostCard from './PostCard'
 import { Image as ImageIcon } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useAppContext } from '@/context/useAppContext'
 
 function getRelativeTime(dateString: string) {
   const now = new Date();
@@ -27,8 +29,7 @@ function getRelativeTime(dateString: string) {
 }
 
 const Post = () => {
-  const currentUser = users.users.find(user => user.user_id === users.current_user_id);
-  
+  const {userData} = useAppContext()
   // Transform user posts to match the expected format
   const allPosts = users.users.flatMap(user => 
     user.posts.map(post => ({
@@ -56,7 +57,7 @@ const Post = () => {
           <div className="flex items-center w-full gap-3 bg-[var(--secondary-bg)] rounded-lg p-4 mb-4 shadow cursor-pointer hover:bg-[var(--accent)/10] transition">
             <Link href="/profile">
               <Image
-                src={currentUser?.profile_picture || "https://picsum.photos/id/237/200/300"}
+                src={userData?.profilePicture || "/user.jpg"}
                 alt="profile"
                 width={40}
                 height={40}

@@ -21,6 +21,10 @@ const nextConfig: NextConfig = {
         hostname: 'picsum.photos',
         pathname: '/seed/profile/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+      },
     ],
   },
 };

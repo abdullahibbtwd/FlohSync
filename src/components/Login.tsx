@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import { toast } from "sonner";
-import { useAppContext } from "@/context/useAppContext";
 import { GetServerSideProps } from 'next';
 import nookies from 'nookies';
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
@@ -39,7 +38,6 @@ const Login = () => {
     username: "",
   });
   const [isLoading, setIsLoading] = useState(false);
-  const { router } = useAppContext();
   type Errors = {
     email?: string;
     password?: string;
@@ -126,7 +124,7 @@ const Login = () => {
       );
       if (response.status === 201) {
         toast.success(response.data.message || "Success!");
-        router.replace('/')
+        window.location.reload();
       } else {
         toast.error(response.data.message || "An error occurred");
       }

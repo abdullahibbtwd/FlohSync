@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import axios from "axios";
 interface UserData {
   username: string;
+  id:string;
   name: string;
   email: string;
   phone: string;
@@ -18,7 +19,26 @@ interface UserData {
   bio: string;
   profilePicture: string;
   coverPicture: string;
+  joinedDate:string;
+  followers:number;
+  following:number;
+  post:number;
 }
+
+interface UserToFollow {
+  id: string;
+  name: string;
+  username: string;
+  profile_picture: string;
+  location: string;
+  bio: string;
+  joinedDate: string;
+  followers: number;
+  following: number;
+  posts: number;
+  relation_status: string;
+}
+
 interface AppContextProps {
   user: string | null;
   setUser: (user: string | null) => void;
@@ -27,6 +47,9 @@ interface AppContextProps {
   router: ReturnType<typeof useRouter>;
   userData: UserData | null;
   getUserData: () => Promise<void>;
+  backendUrl: string;
+  usersToFollow: UserToFollow[];
+  getUsersToFollow: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextProps | undefined>(undefined);
@@ -36,6 +59,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [isDark, setIsDark] = useState(false);
 
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [usersToFollow, setUsersToFollow] = useState<UserToFollow[]>([]);
   const router = useRouter();
   useEffect(() => {
     const storedTheme = localStorage.getItem("theme");
@@ -87,9 +111,31 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const getUsersToFollow = async () => {
+    try {
+      const response = await axios.get(backendUrl + "/api/user/userToFollow", {
+        withCredentials: true,
+      });
+      console.log('Users to follow:', response.data);
+
+      if (response.data.success) {
+        setUsersToFollow(response.data.users);
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("An unknown error occurred");
+      }
+    }
+  };
+
   useEffect(() => {
     getUserData();
-  }, []); // Fetch user data on component mount
+    getUsersToFollow();
+  }, []); // Fetch user data and users to follow on component mount
   const value = {
     user,
     setUser,
@@ -97,7 +143,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     toggleTheme,
     router,
     getUserData,
+    backendUrl,
     userData,
+    usersToFollow,
+    getUsersToFollow,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -30,16 +30,16 @@ const Profile = () => {
     id: '1',
     name: userData?.name,
     username: userData?.username,
-    bio: 'Living life one post at a time ✨ | Photography enthusiast 📸 | Coffee lover ☕',
-    profilePicture: 'https://picsum.photos/id/1005/300/300',
-    coverPhoto: 'https://picsum.photos/id/1018/800/300',
-    location: 'New York, NY',
-    phone: '+1 234 567 8900',
+    bio: userData?.bio ,
+    profilePicture: userData?.profilePicture,
+    coverPhoto: userData?.coverPicture,
+    location: userData?.location,
+    phone: userData?.phone,
     email: userData?.email,
-    joinedDate: '2023-01-15',
-    followers: 1247,
-    following: 892,
-    posts: 156,
+    joinedDate: userData?.joinedDate,
+    followers: userData?.followers,
+    following: userData?.following,
+    posts: userData?.post,
     isVerified: true,
     isPrivate: false
   };
@@ -160,12 +160,11 @@ const Profile = () => {
       {/* Cover Photo */}
       <div className="relative h-48 md:h-64">
         <Image
-          src={user.coverPhoto}
+          src={user.coverPhoto || "/user.jpg"}
           alt="Cover photo"
           fill
           className="object-cover"
         />
-        <div className="absolute inset-0 bg-black bg-opacity-20"></div>
       </div>
 
       {/* Profile Info Section */}
@@ -174,7 +173,7 @@ const Profile = () => {
         <div className="relative -mt-16 mb-4">
           <div className="relative">
             <Image
-              src={user.profilePicture}
+              src={user.profilePicture || "/user.jpg"}
               alt="profile"
               width={120}
               height={120}
@@ -230,7 +229,7 @@ const Profile = () => {
                 )}
                 <div className="flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
-                  <span>Joined {new Date(user.joinedDate).toLocaleDateString()}</span>
+                  <span>Joined {new Date(user.joinedDate || '').toLocaleDateString()}</span>
                 </div>
               </div>
             </div>
@@ -239,15 +238,15 @@ const Profile = () => {
           {/* Stats */}
           <div className="flex gap-6 text-sm">
             <div className="text-center">
-              <div className="font-bold text-lg">{formatNumber(user.posts)}</div>
+              <div className="font-bold text-lg">{formatNumber(user.posts || 0)}</div>
               <div className="text-gray-600 dark:text-gray-400">Posts</div>
             </div>
             <div className="text-center">
-              <div className="font-bold text-lg">{formatNumber(user.followers)}</div>
+              <div className="font-bold text-lg">{formatNumber(user.following || 0)}</div>
               <div className="text-gray-600 dark:text-gray-400">Followers</div>
             </div>
             <div className="text-center">
-              <div className="font-bold text-lg">{formatNumber(user.following)}</div>
+              <div className="font-bold text-lg">{formatNumber(user.followers || 0)}</div>
               <div className="text-gray-600 dark:text-gray-400">Following</div>
             </div>
             <div className="flex gap-3">

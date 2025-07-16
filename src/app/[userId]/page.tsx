@@ -1,17 +1,54 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import React, { useState } from 'react';
-import { users } from '../../../Data';
+import React, { useState, useEffect } from 'react';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
-import { ArrowLeft, MapPin, Phone, UserPlus, UserCheck, UserX, MessageCircle, MoreHorizontal } from 'lucide-react';
+import { ArrowLeft, MapPin, UserPlus, UserCheck, MessageCircle, MoreHorizontal } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import PostCard from '../../components/PostCard';
+import { useAppContext } from '../../context/useAppContext';
+import axios from 'axios';
 
 interface UserProfilePageProps {
   params: Promise<{
     userId: string;
   }>;
+}
+
+interface User {
+  id: string;
+  name: string;
+  username: string;
+  profile_picture: string;
+  location: string;
+  bio: string;
+  joinedDate: string;
+  followers: number;
+  following: number;
+  posts: number;
+  relation_status: string;
+}
+
+interface Video {
+  id: string;
+  content: string;
+  videoUrl: string;
+  createdAt: string;
+  likes: number;
+}
+
+interface Post {
+  id: string;
+  content: string;
+  createdAt: string;
+  likes: number;
+  comments: any[];
+  user: {
+    name: string;
+    profileImage: string;
+  };
+  contentImage: any[];
 }
 
 function getRelativeTime(dateString: string) {
@@ -37,55 +74,65 @@ function getRelativeTime(dateString: string) {
 
 const UserProfilePage: React.FC<UserProfilePageProps> = ({ params }) => {
   const { userId } = React.use(params);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [activeTab, setActiveTab] = useState<'posts' | 'videos' | 'photos'>('posts');
   const router = useRouter();
+  const { userData, backendUrl } = useAppContext();
 
-  // Find the user by ID
-  const user = users.users.find(u => u.user_id === userId);
-  const currentUser = users.users.find(u => u.user_id === users.current_user_id);
+  // Fetch user data from backend
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        setLoading(true);
+        // For now, we'll get the user from the usersToFollow list
+        // In a real app, you'd have a separate API endpoint for individual users
+        const response = await axios.get(`${backendUrl}/api/user/userToFollow`, {
+          withCredentials: true,
+        });
+        
+        if (response.data.success) {
+          const foundUser = response.data.users.find((u: User) => u.id === userId);
+          if (foundUser) {
+            setUser(foundUser);
+            setIsFollowing(foundUser.relation_status === 'following' || foundUser.relation_status === 'friend');
+          } else {
+            notFound();
+          }
+        } else {
+          notFound();
+        }
+      } catch (error) {
+        console.error('Error fetching user:', error);
+        notFound();
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (userId) {
+      fetchUser();
+    }
+  }, [userId, backendUrl]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[var(--primary-bg)] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--accent)] mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     notFound();
   }
 
-  // Check if current user is following this user
-  const isCurrentUserFollowing = currentUser?.following.includes(userId) || false;
-  const isCurrentUser = userId === users.current_user_id;
-
-  // Transform user posts to match PostCard format
-  const userPosts = user.posts.map(post => ({
-    id: post.post_id,
-    user: {
-      name: user.name,
-      profileImage: user.profile_picture,
-    },
-    content: post.content,
-    contentImage: post.image ? [{ id: post.post_id, image: post.image }] : [],
-    likes: Math.floor(Math.random() * 50) + 5,
-    likedBy: [],
-    comments: [],
-    createdAt: post.timestamp,
-  })).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-  // Filter posts by type
-  const regularPosts = userPosts.filter(post => !post.contentImage.length && !post.content.includes('video'));
-  const photoPosts = userPosts.filter(post => post.contentImage.length > 0);
-  const videoPosts = user.posts
-    .filter(post => post.video)
-    .map(post => ({
-      id: post.post_id,
-      user: {
-        name: user.name,
-        profileImage: user.profile_picture,
-      },
-      content: post.content,
-      video: post.video,
-      likes: Math.floor(Math.random() * 50) + 5,
-      createdAt: post.timestamp,
-    }))
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const isCurrentUser = userData?.id === userId;
 
   const handleFollow = () => {
     setIsFollowing(!isFollowing);
@@ -95,13 +142,14 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ params }) => {
 
   const handleMessage = () => {
     // Navigate to chat with this user
-    router.push(`/chat?user=${user.user_id}`);
+    router.push(`/chat?user=${user.id}`);
   };
 
   const getRelationStatusText = () => {
     if (isCurrentUser) return "You";
-    if (isCurrentUserFollowing) return "Following";
-    if (user.followers.includes(users.current_user_id)) return "Follows you";
+    if (user.relation_status === "following") return "Following";
+    if (user.relation_status === "follower") return "Follows you";
+    if (user.relation_status === "friend") return "Friends";
     return "Not connected";
   };
 
@@ -114,7 +162,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ params }) => {
       );
     }
 
-    if (isCurrentUserFollowing) {
+    if (isFollowing) {
       return (
         <button 
           onClick={handleFollow}
@@ -137,30 +185,13 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ params }) => {
     );
   };
 
+  // For now, we'll show empty content since we don't have posts in the current API
   const getTabContent = () => {
-    switch (activeTab) {
-      case 'posts':
-        return regularPosts;
-      case 'photos':
-        return photoPosts;
-      case 'videos':
-        return videoPosts;
-      default:
-        return regularPosts;
-    }
+    return [];
   };
 
-  const getTabCount = (tab: 'posts' | 'videos' | 'photos') => {
-    switch (tab) {
-      case 'posts':
-        return regularPosts.length;
-      case 'photos':
-        return photoPosts.length;
-      case 'videos':
-        return videoPosts.length;
-      default:
-        return 0;
-    }
+  const getTabCount = () => {
+    return 0; // No posts data in current API
   };
 
   return (
@@ -197,7 +228,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ params }) => {
             {/* Profile Picture */}
             <div className="flex-shrink-0">
               <Image
-                src={user.profile_picture}
+                src={user.profile_picture || "/user.jpg"}
                 alt={user.name}
                 width={120}
                 height={120}
@@ -214,11 +245,10 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ params }) => {
                   <div className="flex items-center gap-4 text-sm ">
                     <div className="flex items-center gap-1">
                       <MapPin className="w-4 h-4" />
-                      <span>{user.location}</span>
+                      <span>{user.location || 'No location'}</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Phone className="w-4 h-4" />
-                      <span>{user.phone_number}</span>
+                      <span>Joined {getRelativeTime(user.joinedDate)}</span>
                     </div>
                   </div>
                 </div>
@@ -240,15 +270,15 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ params }) => {
               {/* Stats */}
               <div className="flex gap-6 text-sm">
                 <div>
-                  <span className="font-semibold">{user.posts.length}</span>
+                  <span className="font-semibold">{user.posts}</span>
                   <span className=" ml-1">posts</span>
                 </div>
                 <div>
-                  <span className="font-semibold">{user.followers.length}</span>
+                  <span className="font-semibold">{user.followers}</span>
                   <span className=" ml-1">followers</span>
                 </div>
                 <div>
-                  <span className="font-semibold">{user.following.length}</span>
+                  <span className="font-semibold">{user.following}</span>
                   <span className=" ml-1">following</span>
                 </div>
                 <div>
@@ -270,7 +300,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ params }) => {
                 : ''
             }`}
           >
-            Posts ({getTabCount('posts')})
+            Posts ({getTabCount()})
           </button>
           <button
             onClick={() => setActiveTab('photos')}
@@ -280,7 +310,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ params }) => {
                 : ''
             }`}
           >
-            Photos ({getTabCount('photos')})
+            Photos ({getTabCount()})
           </button>
           <button
             onClick={() => setActiveTab('videos')}
@@ -290,7 +320,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ params }) => {
                 : ''
             }`}
           >
-            Videos ({getTabCount('videos')})
+            Videos ({getTabCount()})
           </button>
         </div>
       </div>
@@ -304,10 +334,10 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ params }) => {
         ) : activeTab === 'videos' ? (
           // Video content display
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {getTabContent().map((video: any) => (
+            {getTabContent().map((video: Video) => (
               <div key={video.id} className="bg-[var(--secondary-bg)] rounded-lg overflow-hidden">
                 <video
-                  src={video.video?.videoUrl || "/test.mp4"}
+                  src={video.videoUrl}
                   className="w-full h-48 object-cover"
                   controls
                 />
@@ -323,7 +353,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ params }) => {
           </div>
         ) : (
           // Posts and Photos content display
-          getTabContent().map((post: any) => (
+          getTabContent().map((post: Post) => (
             <PostCard
               key={post.id}
               user={{
