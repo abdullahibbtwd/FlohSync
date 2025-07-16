@@ -27,7 +27,7 @@ const Profile = () => {
   const [showMenu, setShowMenu] = useState(false);
   const {userData} = useAppContext();
   const user = {
-    id: '1',
+    id: userData?.id || '1',
     name: userData?.name,
     username: userData?.username,
     bio: userData?.bio ,
@@ -39,6 +39,8 @@ const Profile = () => {
     joinedDate: userData?.joinedDate,
     followers: userData?.followers,
     following: userData?.following,
+    followersCount: userData?.followersCount,
+    followingCount: userData?.followingCount,
     posts: userData?.post,
     isVerified: true,
     isPrivate: false
@@ -241,14 +243,15 @@ const Profile = () => {
               <div className="font-bold text-lg">{formatNumber(user.posts || 0)}</div>
               <div className="text-gray-600 dark:text-gray-400">Posts</div>
             </div>
-            <div className="text-center">
-              <div className="font-bold text-lg">{formatNumber(user.following || 0)}</div>
-              <div className="text-gray-600 dark:text-gray-400">Followers</div>
-            </div>
-            <div className="text-center">
-              <div className="font-bold text-lg">{formatNumber(user.followers || 0)}</div>
-              <div className="text-gray-600 dark:text-gray-400">Following</div>
-            </div>
+            <Link href={`/follow/${user.id}/followers`} className="text-center cursor-pointer hover:opacity-80 transition">
+              <div className="font-bold text-lg">{formatNumber(user.followingCount || 0)}</div>
+             <div className="text-gray-600 dark:text-gray-400">Followers</div>
+            </Link>
+            <Link href={`/follow/${user.id}/following`} className="text-center cursor-pointer hover:opacity-80 transition">
+               <div className="font-bold text-lg">{formatNumber(user.followersCount || 0)}</div>
+              <div className="text-gray-400">Following</div>
+            </Link>
+           
             <div className="flex gap-3">
             
             <button className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:text-black hover:bg-[var(--accent)] ease-in-out duration-300 transition">

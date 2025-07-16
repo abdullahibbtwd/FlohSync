@@ -2,6 +2,9 @@
 import React, { useRef, useState } from 'react'
 import { Image as ImageIcon, User as UserIcon, X } from 'lucide-react'
 import Image from 'next/image'
+import { useAppContext } from '../context/useAppContext';
+import axios from 'axios';
+import { toast } from 'sonner';
 
 const MAX_IMAGES = 5;
 
@@ -11,6 +14,35 @@ const CreatePost = () => {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [tags, setTags] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { userData ,backendUrl} = useAppContext();
+  const followingUsers = userData?.following || [];
+
+  const [input, setInput] = useState('');
+  const [selectedTags, setSelectedTags] = useState<{ id: string, name: string }[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+
+  const filteredUsers = Array.isArray(followingUsers)
+    ? followingUsers.filter(
+        (u: any) =>
+          u.name.toLowerCase().includes(input.toLowerCase()) &&
+          !selectedTags.some(tag => tag.id === u.id)
+      )
+    : [];
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value);
+    setShowDropdown(true);
+  };
+
+  const handleSelectUser = (user: { id: string, name: string }) => {
+    setSelectedTags([...selectedTags, user]);
+    setInput('');
+    setShowDropdown(false);
+  };
+  const handleRemoveTag = (id: string) => {
+    setSelectedTags(selectedTags.filter(tag => tag.id !== id));
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -35,15 +67,32 @@ const CreatePost = () => {
     setImagePreviews(prev => prev.filter((_, i) => i !== idx));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // For now, just log the data
-    console.log({ content, images, tags });
-    alert('Post created! (Check console for data)');
-    setContent('');
-    setImages([]);
-    setImagePreviews([]);
-    setTags('');
+    try {
+      const tagsArray = selectedTags.map(tag => tag.name);
+      const payload = {
+        content,
+        userId: userData?.id,
+        images: imagePreviews, // base64 strings
+        tags: tagsArray,
+      };
+      await axios.post(
+        backendUrl + '/api/post/create',
+        payload,
+        { withCredentials: true }
+      );
+      setContent('');
+      setImages([]);
+      setImagePreviews([]);
+      setTags('');
+      setSelectedTags([]);
+      setInput('');
+      toast.success('Post created!');
+    } catch (error) {
+      toast.error('Error creating post');
+      console.error(error);
+    }
   };
 
   return (
@@ -88,17 +137,46 @@ const CreatePost = () => {
             </div>
           )}
         </div>
-        {/* Tag users */}
-        <div className="flex items-center gap-2">
-          <UserIcon className="w-5 h-5" />
-          <input
-            type="text"
-            className="flex-1 rounded-full border px-4 py-2 bg-[var(--primary-bg)] focus:outline-none"
-            placeholder="Tag users (comma separated)"
-            value={tags}
-            onChange={e => setTags(e.target.value)}
-          />
-        </div>
+     
+          <div>
+      <div className="flex flex-wrap gap-2 mb-2">
+        {selectedTags.map(tag => (
+          <span key={tag.id} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full flex items-center">
+            {tag.name}
+            <button
+              className="ml-1 text-xs"
+              onClick={() => handleRemoveTag(tag.id)}
+              type="button"
+            >
+              ×
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="relative">
+        <input
+          type="text"
+          className="flex-1 rounded-full border px-4 py-2 bg-[var(--primary-bg)] focus:outline-none"
+          placeholder="Tag users you follow"
+          value={input}
+          onChange={handleInputChange}
+          onFocus={() => setShowDropdown(true)}
+        />
+        {showDropdown && input && filteredUsers.length > 0 && (
+          <ul className="absolute z-10 bg-white border w-full mt-1 rounded shadow">
+            {filteredUsers.map(user => (
+              <li
+                key={user.id}
+                className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
+                onClick={() => handleSelectUser({ id: user.id, name: user.name })}
+              >
+                {user.name} <span className="text-gray-400">@{user.username}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
         <button
           type="submit"
           className="mt-2 px-6 py-2 rounded-full bg-[var(--accent)] text-white font-semibold hover:opacity-90 transition"

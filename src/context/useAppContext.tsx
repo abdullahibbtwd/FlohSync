@@ -20,8 +20,10 @@ interface UserData {
   profilePicture: string;
   coverPicture: string;
   joinedDate:string;
-  followers:number;
-  following:number;
+  followers: any[] | number;
+  following: any[] | number;
+  followersCount?: number;
+  followingCount?: number;
   post:number;
 }
 
