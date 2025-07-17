@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import type { Comment as PostComment } from '../../Data';
 import Link from "next/link";
+import { useAppContext } from '@/context/useAppContext';
 
 export interface PostCardImage {
   id: number | string;
@@ -32,6 +33,7 @@ export interface PostCardProps {
   liked?: boolean;
   bookmarked?: boolean;
   comments: PostComment[];
+  id: string; // Added id prop
 }
 
 const PostCard: React.FC<PostCardProps> = ({
@@ -39,17 +41,16 @@ const PostCard: React.FC<PostCardProps> = ({
   time,
   text,
   images,
-  likeCount: initialLikeCount,
+  likeCount,
   commentCount,
-  liked: initiallyLiked = false,
-  bookmarked: initiallyBookmarked = false,
+  liked = false,
+  bookmarked = false,
   comments,
+  id,
 }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [zoomImageId, setZoomImageId] = useState<string | null>(null);
-  const [like, setLike] = useState(initiallyLiked);
-  const [likeCount, setLikeCount] = useState(initialLikeCount);
-  const [bookmark, setBookmark] = useState(initiallyBookmarked);
+  const [bookmark, setBookmark] = useState(bookmarked);
   const [expanded, setExpanded] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [localComments, setLocalComments] = useState<PostComment[]>(comments);
@@ -57,6 +58,8 @@ const PostCard: React.FC<PostCardProps> = ({
   const [replyToId, setReplyToId] = useState<string | null>(null);
   const commentInputRef = useRef<HTMLInputElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const { likePost } = useAppContext();
 
   const handleImageClick = () => {
     setModalOpen(true);
@@ -76,20 +79,10 @@ const PostCard: React.FC<PostCardProps> = ({
   };
 
   const handleLike = () => {
-    if (like) {
-      setLike(false);
-      setLikeCount((prev) => prev - 1);
-    } else {
-      setLike(true);
-      setLikeCount((prev) => prev + 1);
-    }
+    likePost(id);
   };
   const handlebookmark = () => {
-    if (bookmark) {
-      setBookmark(false);
-    } else {
-      setBookmark(true);
-    }
+    setBookmark((prev) => !prev);
   };
 
   const zoomedImage = images.find(img => img.id === zoomImageId);
@@ -299,12 +292,14 @@ const PostCard: React.FC<PostCardProps> = ({
         {/* like and comment */}
         <div className="flex gap-4 w-1/2 items-center">
           <div className="flex flex-col items-center justify-center">
-            <button className="w-7 h-7 p-1 flex items-center justify-center cursor-pointer rounded-full">
+            <button
+              className="w-7 h-7 p-1 flex items-center justify-center cursor-pointer rounded-full"
+              onClick={handleLike}
+            >
               <Heart
                 className="cursor-pointer"
-                fill={like ? "red" : "none"}
-                stroke={like ? "red" : "currentColor"}
-                onClick={handleLike}
+                fill={liked ? "red" : "none"}
+                stroke={liked ? "red" : "currentColor"}
               />
             </button>
             <span className="text-[9px] md:text-xs">

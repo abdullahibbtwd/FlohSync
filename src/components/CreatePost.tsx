@@ -1,10 +1,11 @@
 "use client"
 import React, { useRef, useState } from 'react'
-import { Image as ImageIcon, User as UserIcon, X } from 'lucide-react'
+import { ArrowLeft, Image as ImageIcon, User as UserIcon, X } from 'lucide-react'
 import Image from 'next/image'
 import { useAppContext } from '../context/useAppContext';
 import axios from 'axios';
 import { toast } from 'sonner';
+import Link from 'next/link';
 
 const MAX_IMAGES = 5;
 
@@ -16,7 +17,6 @@ const CreatePost = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { userData ,backendUrl} = useAppContext();
   const followingUsers = userData?.following || [];
-
   const [input, setInput] = useState('');
   const [selectedTags, setSelectedTags] = useState<{ id: string, name: string }[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -96,7 +96,14 @@ const CreatePost = () => {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-[70vh] w-full">
+    <div className="flex flex-col justify-center items-center min-h-[70vh] w-full">
+      <div className='w-full py-3 px-4'>
+        <Link href="/" className="flex items-center gap-2  transition">
+            <ArrowLeft  className="w-5 h-5" />
+            <span>Back</span>
+          </Link>
+      </div>
+        
       <form onSubmit={handleSubmit} className="flex flex-col gap-6 w-full max-w-xl bg-[var(--secondary-bg)] rounded-lg shadow p-6">
         <h2 className="text-2xl font-bold mb-2">Create a Post</h2>
         {/* Textarea for post content */}

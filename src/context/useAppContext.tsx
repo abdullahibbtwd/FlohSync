@@ -26,7 +26,23 @@ interface UserData {
   followingCount?: number;
   post:number;
 }
-
+interface PostData {
+  id: string;
+  user: {
+    name: string;
+    profileImage: string;
+    id: string;
+  };
+  content: string;
+  contentImage: { id: string; image: string }[];
+  image?: string[]; 
+  likes: number;
+  likedBy: string[];
+  comments: { id: string; content: string; user: { name: string; profileImage: string } ; createdAt: string }[];
+  createdAt: string;
+  video: string;
+  liked: boolean; // Added liked property
+}
 interface UserToFollow {
   id: string;
   name: string;
@@ -52,6 +68,11 @@ interface AppContextProps {
   backendUrl: string;
   usersToFollow: UserToFollow[];
   getUsersToFollow: () => Promise<void>;
+  posts: PostData[];
+  getPosts: () => Promise<void>;
+  likedPosts: string[];
+  setLikedPosts: (posts: string[]) => void;
+  likePost: (postId: string) => void;
 }
 
 const AppContext = createContext<AppContextProps | undefined>(undefined);
@@ -59,9 +80,10 @@ const AppContext = createContext<AppContextProps | undefined>(undefined);
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<string | null>(null);
   const [isDark, setIsDark] = useState(false);
-
+  const [likedPosts, setLikedPosts] = useState<string[]>([]);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [usersToFollow, setUsersToFollow] = useState<UserToFollow[]>([]);
+  const [posts, setPosts] = useState<PostData[]>([]);
   const router = useRouter();
   useEffect(() => {
     const storedTheme = localStorage.getItem("theme");
@@ -112,7 +134,32 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       }
     }
   };
-
+  const likePost = async (postId: string) => {
+    try {
+      const response = await axios.post(
+        backendUrl + "/api/like/get-like",
+        { postId },
+        { withCredentials: true }
+      );
+      if (response.data.success) {
+        setPosts(prevPosts =>
+          prevPosts.map(post =>
+            post.id === postId
+              ? {
+                  ...post,
+                  likes: response.data.likeCount,
+                  liked: response.data.liked,
+                }
+              : post
+          )
+        );
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      toast.error("Failed to like post");
+    }
+  };
   const getUsersToFollow = async () => {
     try {
       const response = await axios.get(backendUrl + "/api/user/userToFollow", {
@@ -134,9 +181,27 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const getPosts = async () => {
+
+  try {
+    const response = await axios.get(backendUrl + "/api/post/get-posts", {
+      withCredentials: true,
+    });
+    if (response.data.success) {
+      setPosts(response.data.posts.slice().reverse());
+      console.log(response.data.posts);
+    } else {
+      toast.error(response.data.message);
+    }
+  } catch (error) {
+    console.error("Error in getPosts:", error);
+  }
+};
+
   useEffect(() => {
     getUserData();
     getUsersToFollow();
+    getPosts();
   }, []); // Fetch user data and users to follow on component mount
   const value = {
     user,
@@ -149,6 +214,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     userData,
     usersToFollow,
     getUsersToFollow,
+    posts,
+    getPosts,
+    likedPosts,
+    setLikedPosts,
+    likePost,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
