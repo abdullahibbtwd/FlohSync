@@ -8,10 +8,13 @@ import {
   Forward,
   Bookmark,
   X,
+  SendHorizonal
 } from "lucide-react";
 import type { Comment as PostComment } from '../../Data';
 import Link from "next/link";
 import { useAppContext } from '@/context/useAppContext';
+import { toast } from "sonner";
+import axios from "axios";
 
 export interface PostCardImage {
   id: number | string;
@@ -44,13 +47,12 @@ const PostCard: React.FC<PostCardProps> = ({
   likeCount,
   commentCount,
   liked = false,
-  bookmarked = false,
   comments,
+  bookmarked,
   id,
 }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [zoomImageId, setZoomImageId] = useState<string | null>(null);
-  const [bookmark, setBookmark] = useState(bookmarked);
   const [expanded, setExpanded] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [localComments, setLocalComments] = useState<PostComment[]>(comments);
@@ -58,9 +60,90 @@ const PostCard: React.FC<PostCardProps> = ({
   const [replyToId, setReplyToId] = useState<string | null>(null);
   const commentInputRef = useRef<HTMLInputElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [openReplies, setOpenReplies] = useState<{ [commentId: string]: boolean }>({});
 
-  const { likePost } = useAppContext();
+  const { backendUrl, userData,likePost ,bookmark} = useAppContext();
 
+  const handleCommentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!commentInput.trim()) return;
+    setIsSubmitting(true);
+    try {
+      const response = await axios.post(
+        `${backendUrl}/api/comment/create`,
+        {
+          content: commentInput,
+          postId: id,
+        },
+        { withCredentials: true }
+      );
+      if (response.data.success) {
+
+        const newComment = {
+          id: response.data.comment.id,
+          user: {
+            name: response.data.comment.user.name,
+            profilePicture: response.data.comment.user.profilePicture,
+          },
+          text: response.data.comment.content,
+          createdAt: response.data.comment.createdAt,
+        };
+        setLocalComments((prev) => [...prev, newComment]);
+        setCommentInput("");
+      } else {
+        toast.error(response.data.message || "Failed to post comment");
+      }
+    } catch (err) {
+      toast.error("Failed to post comment");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  const handleReplySubmit = async (e: React.FormEvent, commentId: string) => {
+    e.preventDefault();
+    if (!commentInput.trim()) return;
+    setIsSubmitting(true);
+    try {
+      const response = await axios.post(
+        `${backendUrl}/api/reply/create`,
+        {
+          content: commentInput,
+          commentId,
+        },
+        { withCredentials: true }
+      );
+      if (response.data.success) {
+        const newReply = {
+          id: response.data.reply.id,
+          user: {
+            name: response.data.reply.user.name,
+            profilePicture: response.data.reply.user.profilePicture,
+          },
+          text: response.data.reply.content,
+          createdAt: response.data.reply.createdAt,
+        };
+        setLocalComments(prev =>
+          prev.map(c =>
+            c.id === commentId
+              ? {
+                  ...c,
+                  replies: [ ...(c.replies || []), newReply ]
+                }
+              : c
+          )
+        );
+        setCommentInput("");
+        setReplyToId(null);
+      } else {
+        toast.error(response.data.message || "Failed to post reply");
+      }
+    } catch (err) {
+      toast.error("Failed to post reply");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   const handleImageClick = () => {
     setModalOpen(true);
   };
@@ -82,7 +165,27 @@ const PostCard: React.FC<PostCardProps> = ({
     likePost(id);
   };
   const handlebookmark = () => {
-    setBookmark((prev) => !prev);
+    bookmark(id);
+  };
+
+  const handleToggleReplies = (commentId: string) => {
+    setOpenReplies(prev => ({
+      ...prev,
+      [commentId]: !prev[commentId]
+    }));
+  };
+
+  const handleShare = () => {
+    const postUrl = `${window.location.origin}/?post=${id}`;
+    if (navigator.share) {
+      navigator.share({
+        title: 'Check out this post!',
+        url: postUrl,
+      }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(postUrl);
+      toast.success('Post link copied to clipboard!');
+    }
   };
 
   const zoomedImage = images.find(img => img.id === zoomImageId);
@@ -181,9 +284,8 @@ const PostCard: React.FC<PostCardProps> = ({
           </div>
         ) : (
           <div
-            className={`grid gap-2 ${
-              images.length === 2 ? "grid-cols-2" : "grid-cols-2 grid-rows-2"
-            }`}
+            className={`grid gap-2 ${images.length === 2 ? "grid-cols-2" : "grid-cols-2 grid-rows-2"
+              }`}
           >
             {images.slice(0, 4).map((img, idx) => (
               <div
@@ -324,14 +426,13 @@ const PostCard: React.FC<PostCardProps> = ({
         </div>
         {/* Save and Share */}
         <div className="flex gap-2 w-1/2 items-center mt-4 justify-end">
-          <button className="w-7 h-7 p-1 flex items-center justify-center cursor-pointer rounded-full">
+          <button className="w-7 h-7 p-1 flex items-center justify-center cursor-pointer rounded-full" onClick={handleShare}>
             <Forward />
           </button>
-          <button className="w-7 h-7 p-1 flex items-center justify-center cursor-pointer rounded-full">
+          <button className="w-7 h-7 p-1 flex items-center justify-center cursor-pointer rounded-full" onClick={handlebookmark}>
             <Bookmark
-              fill={bookmark ? "red" : "none"}
-              stroke={bookmark ? "red" : "currentColor"}
-              onClick={handlebookmark}
+              fill={bookmarked ? "red" : "none"}
+              stroke={bookmarked ? "red" : "currentColor"}
             />
           </button>
         </div>
@@ -345,21 +446,21 @@ const PostCard: React.FC<PostCardProps> = ({
                 <li key={comment.id} className="flex flex-col gap-1">
                   <div className="flex items-start gap-2">
                     <Image
-                      src={comment.user.profileImage}
-                      alt={comment.user.name}
+                      src={comment.user?.profilePicture || "/user.jpg"}
+                      alt={comment.user?.name || "Unknown User"}
                       width={32}
                       height={32}
                       className="w-8 h-8 rounded-full object-cover"
                     />
                     <div className="flex-1">
-                      <span className="font-bold">{comment.user.name}</span>
-                      <p className="text-sm">{comment.text}</p>
+                      <span className="font-bold">{comment.user?.name || "Unknown User"}</span>
+                      <p className="text-sm">{comment?.text}</p>
                       <button
                         className="text-xs text-blue-500 hover:underline mt-1"
                         type="button"
                         onClick={() => {
                           setReplyToId(comment.id);
-                          const prefill = `@${comment.user.name} `;
+                          const prefill = `@${comment.user?.name || "Unknown User"} `;
                           setCommentInput(prefill);
                           setTimeout(() => {
                             if (commentInputRef.current) {
@@ -378,38 +479,23 @@ const PostCard: React.FC<PostCardProps> = ({
                   {replyToId === comment.id && (
                     <form
                       className="flex items-center gap-2 mt-2 ml-10"
-                      onSubmit={e => {
-                        e.preventDefault();
-                        if (!commentInput.trim()) return;
-                        setLocalComments(prev => [
-                          ...prev,
-                          {
-                            id: `local-${Date.now()}`,
-                            user: {
-                              name: 'You',
-                              profileImage: 'https://api.dicebear.com/7.x/avataaars/svg?seed=You',
-                            },
-                            text: commentInput,
-                            createdAt: new Date().toISOString(),
-                          },
-                        ]);
-                        setCommentInput('');
-                        setReplyToId(null);
-                      }}
+                      onSubmit={e => handleReplySubmit(e, comment.id)}
                     >
                       <input
                         ref={commentInputRef}
                         type="text"
                         className="flex-1 rounded-full border px-4 py-2 bg-[var(--primary-bg)] focus:outline-none"
-                        placeholder={`Replying to @${comment.user.name}`}
+                        placeholder={`Replying to @${comment.user?.name || "Unknown User"}`}
                         value={commentInput}
                         onChange={e => setCommentInput(e.target.value)}
+                        disabled={isSubmitting}
                       />
                       <button
                         type="submit"
                         className="px-4 py-2 rounded-full bg-[var(--accent)] text-white font-semibold hover:opacity-90 transition"
+                        disabled={isSubmitting}
                       >
-                        Send
+                        {isSubmitting ? "Sending..." : <SendHorizonal size={20}/>}
                       </button>
                       <button
                         type="button"
@@ -419,9 +505,43 @@ const PostCard: React.FC<PostCardProps> = ({
                           setCommentInput('');
                         }}
                       >
-                       <X size={20}/>
+                        <X size={20} />
                       </button>
                     </form>
+                  )}
+                  <button
+                    className="text-xs text-blue-500 hover:underline mt-1 ml-2"
+                    type="button"
+                    onClick={() => handleToggleReplies(comment.id)}
+                  >
+                    {openReplies[comment.id] ? "Hide replies" : "Show replies"} {comment.replies?.length}
+                  </button>
+                  {openReplies[comment.id] && (
+                    <div className="ml-10 mt-2">
+                      {/* Render replies for this comment here */}
+                      {comment.replies && openReplies[comment.id] && (
+                        <div className="ml-10 mt-2">
+                          {comment.replies.map(reply => (
+                            <div key={reply.id} className="flex items-start gap-2 mb-2">
+                              <Image
+                                src={reply.user?.profilePicture || "/user.jpg"}
+                                alt={reply.user?.name || "Unknown User"}
+                                width={24}
+                                height={24}
+                                className="w-6 h-6 rounded-full object-cover"
+                              />
+                              <div>
+                                <span className="font-bold">{reply.user?.name || "Unknown User"}</span>
+                                <p className="text-sm">{reply.text}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {Array.isArray(comment.replies) && comment.replies.length < 1 && (
+                        <p className="text-xs text-gray-500">No replies yet.</p>
+                      )}
+                    </div>
                   )}
                 </li>
               ))}
@@ -431,25 +551,10 @@ const PostCard: React.FC<PostCardProps> = ({
           )}
           {/* Add new comment input if not replying */}
           {replyToId === null && (
+         
             <form
               className="flex items-center gap-2 mt-4"
-              onSubmit={e => {
-                e.preventDefault();
-                if (!commentInput.trim()) return;
-                setLocalComments(prev => [
-                  ...prev,
-                  {
-                    id: `local-${Date.now()}`,
-                    user: {
-                      name: 'You',
-                      profileImage: 'https://api.dicebear.com/7.x/avataaars/svg?seed=You',
-                    },
-                    text: commentInput,
-                    createdAt: new Date().toISOString(),
-                  },
-                ]);
-                setCommentInput('');
-              }}
+              onSubmit={handleCommentSubmit}
             >
               <input
                 ref={commentInputRef}
@@ -458,12 +563,14 @@ const PostCard: React.FC<PostCardProps> = ({
                 placeholder="Add a comment..."
                 value={commentInput}
                 onChange={e => setCommentInput(e.target.value)}
+                disabled={isSubmitting}
               />
               <button
                 type="submit"
                 className="px-4 py-2 rounded-full bg-[var(--accent)] text-white font-semibold hover:opacity-90 transition"
+                disabled={isSubmitting}
               >
-                Send
+                {isSubmitting ? "Sending..." : <SendHorizonal size={20}/>}
               </button>
             </form>
           )}

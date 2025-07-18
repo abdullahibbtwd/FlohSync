@@ -5,6 +5,8 @@ import PostCard from './PostCard'
 import { Image as ImageIcon } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 function getRelativeTime(dateString: string) {
   const now = new Date();
@@ -28,25 +30,21 @@ function getRelativeTime(dateString: string) {
 }
 
 const Post = () => {
-  const { userData, posts } = useAppContext()
-  // Transform user posts to match the expected format
-  // const allPosts = users.users.flatMap(user => 
-  //   user.posts.map(post => ({
-  //     id: post.post_id,
-  //     user: {
-  //       name: user.name,
-  //       profileImage: user.profile_picture,
-  //       userId: user.user_id,
-  //     },
-  //     content: post.content,
-  //     contentImage: post.image ? [{ id: post.post_id, image: post.image }] : [],
-  //     likes: Math.floor(Math.random() * 50) + 5, // Random likes for demo
-  //     likedBy: [],
-  //     comments: [], // Empty comments array for now
-  //     createdAt: post.timestamp,
-  //     video: post.video
-  //   }))
-  // ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const { userData, posts,bookmarkedPosts } = useAppContext();
+  const searchParams = useSearchParams();
+  const postId = searchParams.get("post");
+
+  useEffect(() => {
+    if (postId && posts.length > 0) {
+      const el = document.getElementById(`post-${postId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.classList.add("ring-2", "ring-[var(--accent)]");
+        setTimeout(() => el.classList.remove("ring-2", "ring-[var(--accent)]"), 2000);
+      }
+    }
+  }, [postId, posts]);
+  
 
   return (
     <div className="flex justify-center mt-15 items-center w-full">
@@ -87,37 +85,47 @@ const Post = () => {
             : [];
 
           return (
-            <PostCard
-              key={post?.id}
-              id={post?.id}
-              user={{
-                name: post?.user?.name,
-                profileImage: post?.user?.profileImage || "/user.jpg",
-                userId: post?.user?.id,
-                status: undefined
-              }}
-              time={getRelativeTime(post?.createdAt)}
-              text={post?.content}
-              images={images}
-              likeCount={post?.likes}
-              commentCount={post?.comments?.length ?? 0}
-              liked={post?.liked}
-              bookmarked={false}
-              comments={post.comments.map(c => ({
-                id: c.id,
-                text: c.content,
-                user: {
-                  name: typeof c.user === 'string' ? c.user : c.user?.name ?? '',
-                  profileImage: c.user?.profileImage ?? '/user.jpg'
-                },
-                createdAt: c.createdAt ?? ''
-              }))}
-            />
+            <div id={`post-${post.id}`} className='w-full' key={post?.id}>
+              <PostCard
+                id={post?.id}
+                user={{
+                  name: post?.user?.name,
+                  profileImage: post?.user?.profilePicture || "/user.jpg",
+                  userId: post?.user?.id,
+                  status: undefined
+                }}
+                time={getRelativeTime(post?.createdAt)}
+                text={post?.content}
+                images={images}
+                likeCount={post?.likes}
+                commentCount={post?.comments?.length ?? 0}
+                liked={post?.liked}
+                bookmarked={bookmarkedPosts.includes(post.id)}
+                comments={post.comments.map(c => ({
+                  id: c.id,
+                  text: c.content,
+                  user: {
+                    name: c.user?.name,
+                    profilePicture: c.user?.profilePicture
+                  },
+                  createdAt: c.createdAt ?? '',
+                  replies: ((c as any).replies || []).map((r: any) => ({
+                    id: r.id,
+                    text: r.content,
+                    user: {
+                      name: r.user?.name,
+                      profilePicture: r.user?.profilePicture
+                    },
+                    createdAt: r.createdAt ?? ''
+                  }))
+                }))}
+              />
+            </div>
           );
         })}
       </div>
     </div>
   )
 }
-
+ 
 export default Post

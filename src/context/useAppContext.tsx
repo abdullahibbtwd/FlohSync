@@ -30,18 +30,32 @@ interface PostData {
   id: string;
   user: {
     name: string;
-    profileImage: string;
+    profilePicture: string;
     id: string;
+    bookmark:boolean;
   };
   content: string;
   contentImage: { id: string; image: string }[];
   image?: string[]; 
   likes: number;
   likedBy: string[];
-  comments: { id: string; content: string; user: { name: string; profileImage: string } ; createdAt: string }[];
+ 
+  comments: {
+    id: string;
+    content: string;
+    user: { name: string; profilePicture: string };
+    createdAt: string;
+    replies?: {
+      id: string;
+      content: string;
+      user: { name: string; profilePicture: string };
+      createdAt: string;
+    }[];
+  }[];
   createdAt: string;
   video: string;
   liked: boolean; // Added liked property
+  bookmarked: boolean; // Added bookmarked property
 }
 interface UserToFollow {
   id: string;
@@ -72,7 +86,10 @@ interface AppContextProps {
   getPosts: () => Promise<void>;
   likedPosts: string[];
   setLikedPosts: (posts: string[]) => void;
+  bookmark: (postId: string) => void;
   likePost: (postId: string) => void;
+  bookmarkedPosts: string[];
+  setBookmarkedPosts: (posts: string[]) => void;
 }
 
 const AppContext = createContext<AppContextProps | undefined>(undefined);
@@ -84,6 +101,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [usersToFollow, setUsersToFollow] = useState<UserToFollow[]>([]);
   const [posts, setPosts] = useState<PostData[]>([]);
+  const [bookmarkedPosts, setBookmarkedPosts] = useState<string[]>([]);
   const router = useRouter();
   useEffect(() => {
     const storedTheme = localStorage.getItem("theme");
@@ -160,6 +178,36 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       toast.error("Failed to like post");
     }
   };
+  const bookmark = async (postId: string) => {
+    try {
+      const response = await axios.post(
+        backendUrl + "/api/bookmark/add",
+        { postId },
+        { withCredentials: true }
+      );
+      if (response.data.success) {
+        setPosts(prevPosts =>
+          prevPosts.map(post =>
+            post.id === postId
+              ? { ...post, bookmarked: response.data.bookmark }
+              : post
+          )
+        );
+        if (response.data.success) {
+          toast.success(response.data.bookmark ? "Post bookmarked!" : "Bookmark removed!");
+        }
+        setBookmarkedPosts(prevBookmarked =>
+          response.data.bookmark
+            ? [...prevBookmarked, postId]
+            : prevBookmarked.filter(id => id !== postId)
+        );
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      toast.error("Failed to bookmark post");
+    }
+  };
   const getUsersToFollow = async () => {
     try {
       const response = await axios.get(backendUrl + "/api/user/userToFollow", {
@@ -189,6 +237,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     });
     if (response.data.success) {
       setPosts(response.data.posts.slice().reverse());
+      setBookmarkedPosts(response.data.bookmarkedPostIds); // <-- add this
       console.log(response.data.posts);
     } else {
       toast.error(response.data.message);
@@ -219,6 +268,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     likedPosts,
     setLikedPosts,
     likePost,
+    bookmark,
+    bookmarkedPosts,
+    setBookmarkedPosts
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

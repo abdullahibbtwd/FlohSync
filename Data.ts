@@ -2,10 +2,11 @@ export interface Comment {
   id: string;
   user: {
     name: string;
-    profileImage: string;
+    profilePicture: string;
   };
   text: string;
   createdAt: string;
+  replies?: Comment[];
 }
 
 export interface Post {
@@ -22,85 +23,85 @@ export interface Post {
   createdAt: string;
 }
 
-export const posts: Post[] = [
-  {
-    id: "1",
-    user: {
-      name: "Alice Smith",
-      profileImage: "https://picsum.photos/id/237/200/300",
-    },
-    content: "Enjoying a sunny day at the park! ☀️",
-    contentImage: [
-      { id: "1-0", image: "https://picsum.photos/id/1018/600/400" },
-      { id: "1-1", image: "https://picsum.photos/id/1018/600/400" },
-    ],
-    likes: 12,
-    likedBy: ["Bob", "Charlie", "Diana"],
-    comments: [
-      {
-        id: "c1",
-        user: {
-          name: "Bob Johnson",
-          profileImage: "https://picsum.photos/id/237/200/300",
-        },
-        text: "Looks beautiful! Have fun!",
-        createdAt: "2024-06-01T10:15:00Z",
-      },
-      {
-        id: "c2",
-        user: {
-          name: "Charlie Lee",
-          profileImage: "https://picsum.photos/id/238/200/300",
-        },
-        text: "Wish I was there!",
-        createdAt: "2024-06-01T10:20:00Z",
-      },
-    ],
-    createdAt: "2025-07-04T10:00:00Z",
-  },
-  {
-    id: "2",
-    user: {
-      name: "Diana Prince",
-      profileImage: "https://picsum.photos/id/237/200/300",
-    },
-    content: "Just finished a new painting! 🎨",
-    contentImage: [
-      { id: "2-0", image: "https://picsum.photos/id/1039/600/400" },
-      { id: "2-1", image: "https://picsum.photos/id/1024/600/400" },
-    ],
-    likes: 34,
-    likedBy: ["Alice", "Bob"],
-    comments: [
-      {
-        id: "c3",
-        user: {
-          name: "Alice Smith",
-          profileImage: "https://picsum.photos/id/239/200/300",
-        },
-        text: "Amazing work, Diana!",
-        createdAt: "2024-06-02T14:05:00Z",
-      },
-    ],
-    createdAt: "2024-06-02T14:00:00Z",
-  },
-  {
-    id: "3",
-    user: {
-      name: "Charlie Lee",
-      profileImage: "https://picsum.photos/id/237/200/300",
-    },
-    content: "Had a great time hiking in the mountains.",
-    contentImage: [
-      { id: "3-0", image: "https://picsum.photos/id/1024/600/400" },
-      { id: "3-1", image: "https://picsum.photos/id/1039/600/400" },
-    ],
-    likes: 20,
-    likedBy: ["Diana", "Alice"],
-    comments: [],
-    createdAt: "2024-06-03T09:30:00Z",
-  },
-];
+// export const posts: Post[] = [
+//   {
+//     id: "1",
+//     user: {
+//       name: "Alice Smith",
+//       profileImage: "https://picsum.photos/id/237/200/300",
+//     },
+//     content: "Enjoying a sunny day at the park! ☀️",
+//     contentImage: [
+//       { id: "1-0", image: "https://picsum.photos/id/1018/600/400" },
+//       { id: "1-1", image: "https://picsum.photos/id/1018/600/400" },
+//     ],
+//     likes: 12,
+//     likedBy: ["Bob", "Charlie", "Diana"],
+//     comments: [
+//       {
+//         id: "c1",
+//         user: {
+//           name: "Bob Johnson",
+//           profileImage: "https://picsum.photos/id/237/200/300",
+//         },
+//         text: "Looks beautiful! Have fun!",
+//         createdAt: "2024-06-01T10:15:00Z",
+//       },
+//       {
+//         id: "c2",
+//         user: {
+//           name: "Charlie Lee",
+//           profileImage: "https://picsum.photos/id/238/200/300",
+//         },
+//         text: "Wish I was there!",
+//         createdAt: "2024-06-01T10:20:00Z",
+//       },
+//     ],
+//     createdAt: "2025-07-04T10:00:00Z",
+//   },
+//   {
+//     id: "2",
+//     user: {
+//       name: "Diana Prince",
+//       profileImage: "https://picsum.photos/id/237/200/300",
+//     },
+//     content: "Just finished a new painting! 🎨",
+//     contentImage: [
+//       { id: "2-0", image: "https://picsum.photos/id/1039/600/400" },
+//       { id: "2-1", image: "https://picsum.photos/id/1024/600/400" },
+//     ],
+//     likes: 34,
+//     likedBy: ["Alice", "Bob"],
+//     comments: [
+//       {
+//         id: "c3",
+//         user: {
+//           name: "Alice Smith",
+//           profileImage: "https://picsum.photos/id/239/200/300",
+//         },
+//         text: "Amazing work, Diana!",
+//         createdAt: "2024-06-02T14:05:00Z",
+//       },
+//     ],
+//     createdAt: "2024-06-02T14:00:00Z",
+//   },
+//   {
+//     id: "3",
+//     user: {
+//       name: "Charlie Lee",
+//       profileImage: "https://picsum.photos/id/237/200/300",
+//     },
+//     content: "Had a great time hiking in the mountains.",
+//     contentImage: [
+//       { id: "3-0", image: "https://picsum.photos/id/1024/600/400" },
+//       { id: "3-1", image: "https://picsum.photos/id/1039/600/400" },
+//     ],
+//     likes: 20,
+//     likedBy: ["Diana", "Alice"],
+//     comments: [],
+//     createdAt: "2024-06-03T09:30:00Z",
+//   },
+// ];
 
 export interface VideoComment {
   id: string;
