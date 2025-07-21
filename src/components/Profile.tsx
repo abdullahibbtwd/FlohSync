@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
   Settings, 
@@ -9,6 +9,7 @@ import {
   Heart,
   MessageCircle,
   Share2,
+  X,
 
   MapPin,
   Phone,
@@ -21,11 +22,19 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import {useAppContext} from "../context/useAppContext";
+import axios from 'axios';
+import PostCard from './PostCard';
+import { toast } from 'sonner';
 const Profile = () => {
   const [activeTab, setActiveTab] = useState('posts');
   //const [isFollowing, setIsFollowing] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const {userData} = useAppContext();
+  const [userPosts, setUserPosts] = useState<any[]>([]);
+  const [selectedPost, setSelectedPost] = useState<any>(null);
+  const [showPostModal, setShowPostModal] = useState(false);
+  const [savedPosts, setSavedPosts] = useState<any[]>([]);
+  const [likedPosts, setLikedPosts] = useState<any[]>([]);
+  const { userData, backendUrl } = useAppContext();
   const user = {
     id: userData?.id || '1',
     name: userData?.name,
@@ -46,82 +55,69 @@ const Profile = () => {
     isPrivate: false
   };
 
-  // Mock posts data
-  const posts = [
-    {
-      id: '1',
-      type: 'image',
-      content: 'Beautiful sunset at the beach today! 🌅',
-      media: 'https://picsum.photos/id/1015/400/400',
-      likes: 234,
-      comments: 45,
-      timestamp: '2024-01-15T10:30:00Z'
-    },
-    {
-      id: '2',
-      type: 'video',
-      content: 'Amazing concert last night! 🎵',
-      media: 'https://picsum.photos/id/1016/400/400',
-      likes: 567,
-      comments: 89,
-      timestamp: '2024-01-14T20:15:00Z'
-    },
-    {
-      id: '3',
-      type: 'image',
-      content: 'Coffee and coding ☕💻',
-      media: 'https://picsum.photos/id/1019/400/400',
-      likes: 123,
-      comments: 23,
-      timestamp: '2024-01-13T09:45:00Z'
-    },
-    {
-      id: '4',
-      type: 'image',
-      content: 'Weekend vibes 🌟',
-      media: 'https://picsum.photos/id/1020/400/400',
-      likes: 345,
-      comments: 67,
-      timestamp: '2024-01-12T16:20:00Z'
-    },
-    {
-      id: '5',
-      type: 'video',
-      content: 'Travel adventures! ✈️',
-      media: 'https://picsum.photos/id/1021/400/400',
-      likes: 789,
-      comments: 156,
-      timestamp: '2024-01-11T14:30:00Z'
-    },
-    {
-      id: '6',
-      type: 'image',
-      content: 'Food photography 📸',
-      media: 'https://picsum.photos/id/1022/400/400',
-      likes: 234,
-      comments: 34,
-      timestamp: '2024-01-10T12:00:00Z'
-    }
-  ];
+  useEffect(() => {
+    const fetchUserPosts = async () => {
+      try {
+        const response = await axios.get(backendUrl + '/api/post/user', { withCredentials: true });
+        if (response.data.success) {
+          setUserPosts(response.data.posts);
+          console.log(response.data.posts)
+        }
+      } catch (error) {
+        toast.error("something went wrong!")
+      }
+    };
+    fetchUserPosts();
+  }, [backendUrl]);
 
-  // const handleFollow = () => {
-  //   setIsFollowing(!isFollowing);
-  // };
+  useEffect(() => {
+    const fetchSavedPosts = async () => {
+      try {
+        const response = await axios.get(backendUrl + '/api/post/save', { withCredentials: true });
+        if (response.data.success) {
+          setSavedPosts(response.data.posts);
+        }
+      } catch (error) {
+        toast.error("Failed to fetch saved posts!");
+      }
+    };
+    fetchSavedPosts();
+  }, [backendUrl]);
 
-  // const getRelativeTime = (dateString: string) => {
-  //   const now = new Date();
-  //   const date = new Date(dateString);
-  //   const diff = now.getTime() - date.getTime();
-  //   const seconds = Math.floor(diff / 1000);
-  //   const minutes = Math.floor(seconds / 60);
-  //   const hours = Math.floor(minutes / 60);
-  //   const days = Math.floor(hours / 24);
+  useEffect(() => {
+    const fetchLikedPosts = async () => {
+      try {
+        const response = await axios.get(backendUrl + '/api/post/like', { withCredentials: true });
+        if (response.data.success) {
+          setLikedPosts(response.data.posts);
+        }
+      } catch (error) {
+        toast.error("Failed to fetch liked posts!");
+      }
+    };
+    fetchLikedPosts();
+  }, [backendUrl]);
 
-  //   if (days > 0) return `${days}d`;
-  //   if (hours > 0) return `${hours}h`;
-  //   if (minutes > 0) return `${minutes}m`;
-  //   return 'now';
-  // };
+  function getRelativeTime(dateString: string) {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diff = now.getTime() - date.getTime();
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    const weeks = Math.floor(days / 7);
+    const months = Math.floor(days / 30);
+    const years = Math.floor(days / 365);
+  
+    if (years > 0) return `${years} year${years > 1 ? 's' : ''} ago`;
+    if (months > 0) return `${months} month${months > 1 ? 's' : ''} ago`;
+    if (weeks > 0) return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+    if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+    return 'just now';
+  }
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
@@ -130,9 +126,9 @@ const Profile = () => {
   };
 
   const tabs = [
-    { id: 'posts', label: 'Posts', icon: Grid3X3, count: posts.length },
-    { id: 'saved', label: 'Saved', icon: Bookmark, count: 23 },
-    { id: 'liked', label: 'Liked', icon: Heart, count: 156 }
+    { id: 'posts', label: 'Posts', icon: Grid3X3, count: userPosts.length },
+    { id: 'saved', label: 'Saved', icon: Bookmark, count: savedPosts.length },
+    { id: 'liked', label: 'Liked', icon: Heart, count: likedPosts.length }
   ];
 
   return (
@@ -295,16 +291,38 @@ const Profile = () => {
       <div className="p-4">
         {activeTab === 'posts' && (
           <div className="grid grid-cols-3 gap-1 md:gap-2">
-            {posts.map((post) => (
-              <div key={post.id} className="relative aspect-square group cursor-pointer">
-                <Image
-                  src={post.media}
-                  alt={post.content}
-                  fill
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity text-white text-center p-2">
+            {userPosts.map((post) => (
+              <div
+                key={post.id}
+                className="relative aspect-square group cursor-pointer rounded-sm overflow-hidden bg-black"
+                onClick={() => { 
+                  console.log('Image URL:', post.image?.[0]);
+                  setSelectedPost(post); 
+                  setShowPostModal(true); 
+                }}
+              >
+                {post.image && post.image[0] ? (
+                  <div 
+                    className="absolute inset-0 w-full h-full"
+                    style={{
+                      backgroundImage: `url('${post.image[0]}')`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      backgroundRepeat: 'no-repeat'
+                    }}
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center p-2">
+                    <span className="text-center text-white text-base font-semibold line-clamp-2">{post.content}</span>
+                  </div>
+                )}
+                
+                {/* Hover overlay */}
+                <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity" />
+                
+                {/* Content overlay */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="text-white text-center p-2">
                     <div className="flex items-center justify-center gap-4 mb-2">
                       <div className="flex items-center gap-1">
                         <Heart className="w-4 h-4" />
@@ -312,39 +330,164 @@ const Profile = () => {
                       </div>
                       <div className="flex items-center gap-1">
                         <MessageCircle className="w-4 h-4" />
-                        <span className="text-sm">{formatNumber(post.comments)}</span>
+                        <span className="text-sm">{formatNumber(post.comments?.length || 0)}</span>
                       </div>
                     </div>
                     <p className="text-xs line-clamp-2">{post.content}</p>
                   </div>
                 </div>
-                {post.type === 'video' && (
-                  <div className="absolute top-2 right-2">
-                    <Video className="w-4 h-4 text-white drop-shadow" />
-                  </div>
-                )}
               </div>
             ))}
           </div>
         )}
 
         {activeTab === 'saved' && (
-          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-            <Bookmark className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>No saved posts yet</p>
-            <p className="text-sm">Posts you save will appear here</p>
+          <div className="grid grid-cols-3 gap-1 md:gap-2">
+            {savedPosts.length === 0 ? (
+              <div className="col-span-3 text-center py-12 text-gray-500 dark:text-gray-400">
+                <Bookmark className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No saved posts yet</p>
+                <p className="text-sm">Posts you save will appear here</p>
+              </div>
+            ) : (
+              savedPosts.map((post) => (
+                <div
+                  key={post.id}
+                  className="relative aspect-square group cursor-pointer rounded-sm overflow-hidden bg-black"
+                  onClick={() => { 
+                    setSelectedPost(post); 
+                    setShowPostModal(true); 
+                  }}
+                >
+                  {post.image && post.image[0] ? (
+                    <div 
+                      className="absolute inset-0 w-full h-full"
+                      style={{
+                        backgroundImage: `url('${post.image[0]}')`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        backgroundRepeat: 'no-repeat'
+                      }}
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center p-2">
+                      <span className="text-center text-white text-base font-semibold line-clamp-2">{post.content}</span>
+                    </div>
+                  )}
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity" />
+                  {/* Content overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="text-white text-center p-2">
+                      <div className="flex items-center justify-center gap-4 mb-2">
+                        <div className="flex items-center gap-1">
+                          <Heart className="w-4 h-4" />
+                          <span className="text-sm">{formatNumber(post.likes)}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <MessageCircle className="w-4 h-4" />
+                          <span className="text-sm">{formatNumber(post.comments?.length || 0)}</span>
+                        </div>
+                      </div>
+                      <p className="text-xs line-clamp-2">{post.content}</p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         )}
 
         {activeTab === 'liked' && (
-          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-            <Heart className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>No liked posts yet</p>
-            <p className="text-sm">Posts you like will appear here</p>
+          <div className="grid grid-cols-3 gap-1 md:gap-2">
+            {likedPosts.length === 0 ? (
+              <div className="col-span-3 text-center py-12 text-gray-500 dark:text-gray-400">
+                <Heart className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No liked posts yet</p>
+                <p className="text-sm">Posts you like will appear here</p>
+              </div>
+            ) : (
+              likedPosts.map((post) => (
+                <div
+                  key={post.id}
+                  className="relative aspect-square group cursor-pointer rounded-sm overflow-hidden bg-black"
+                  onClick={() => { 
+                    setSelectedPost(post); 
+                    setShowPostModal(true); 
+                  }}
+                >
+                  {post.image && post.image[0] ? (
+                    <div 
+                      className="absolute inset-0 w-full h-full"
+                      style={{
+                        backgroundImage: `url('${post.image[0]}')`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        backgroundRepeat: 'no-repeat'
+                      }}
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center p-2">
+                      <span className="text-center text-white text-base font-semibold line-clamp-2">{post.content}</span>
+                    </div>
+                  )}
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity" />
+                  {/* Content overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="text-white text-center p-2">
+                      <div className="flex items-center justify-center gap-4 mb-2">
+                        <div className="flex items-center gap-1">
+                          <Heart className="w-4 h-4" />
+                          <span className="text-sm">{formatNumber(post.likes)}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <MessageCircle className="w-4 h-4" />
+                          <span className="text-sm">{formatNumber(post.comments?.length || 0)}</span>
+                        </div>
+                      </div>
+                      <p className="text-xs line-clamp-2">{post.content}</p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         )}
       </div>
 
+      {/* Post Modal */}
+      {showPostModal && selectedPost && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{
+            backgroundColor: 'var(--primary-bg)',
+            color: 'var(--primary-text)',
+          }}
+        >
+          <div className="relative max-w-xl w-full bg-[var(--primary-bg)] text-[var(--primary-text)] rounded-lg p-8 shadow-lg">
+            <button className="absolute top-4 right-4 z-10 bg-[var(--primary-bg)] rounded-full p-2 hover:bg-[var(--secondary-bg)] transition" onClick={() => setShowPostModal(false)}>
+              <X className="w-6 h-6" />
+            </button>
+            <PostCard
+              id={selectedPost.id}
+              user={{
+                name: selectedPost.user?.name,
+                profileImage: selectedPost.user?.profilePicture || "/user.jpg",
+                userId: selectedPost.user?.id,
+              }}
+              time={getRelativeTime(selectedPost.createdAt)}
+              text={selectedPost.content}
+              images={selectedPost.image ? selectedPost.image.map((img: string, idx: number) => ({ id: `${selectedPost.id}-${idx}`, image: img })) : []}
+              likeCount={selectedPost.likes}
+              commentCount={selectedPost.comments?.length || 0}
+              liked={selectedPost.liked}
+              bookmarked={selectedPost.bookmarked}
+              comments={selectedPost.comments || []}
+            />
+          </div>
+        </div>
+      )}
       {/* Menu Dropdown */}
       {showMenu && (
         <div className="fixed inset-0 z-50" onClick={() => setShowMenu(false)}>

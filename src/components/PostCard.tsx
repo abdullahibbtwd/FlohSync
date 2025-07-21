@@ -212,6 +212,7 @@ const PostCard: React.FC<PostCardProps> = ({
                   width={30}
                   height={30}
                   className="object-cover w-full h-full cursor-pointer rounded-full"
+                  priority
                 />
               </div>
             </Link>
@@ -226,6 +227,7 @@ const PostCard: React.FC<PostCardProps> = ({
                 width={30}
                 height={30}
                 className="object-cover w-full h-full rounded-full"
+                priority
               />
             </div>
           )}
@@ -280,6 +282,8 @@ const PostCard: React.FC<PostCardProps> = ({
               fill
               className="object-cover rounded-lg"
               style={{ objectFit: "cover" }}
+              priority
+              sizes="(max-width: 768px) 100vw, 600px"
             />
           </div>
         ) : (
@@ -299,6 +303,8 @@ const PostCard: React.FC<PostCardProps> = ({
                   fill
                   className="object-cover rounded-lg"
                   style={{ objectFit: "cover" }}
+                  priority
+                  sizes="(max-width: 768px) 100vw, 400px"
                 />
                 {/* Overlay only on the 4th image if there are more than 4 */}
                 {idx === 3 && images.length > 4 && (
@@ -338,6 +344,7 @@ const PostCard: React.FC<PostCardProps> = ({
                     className="object-contain rounded-lg"
                     style={{ objectFit: "contain" }}
                     sizes="(max-width: 768px) 100vw, 600px"
+                    priority
                   />
                 </div>
               ))}
@@ -372,6 +379,7 @@ const PostCard: React.FC<PostCardProps> = ({
                   fill
                   className="object-contain rounded-lg"
                   style={{ objectFit: "contain" }}
+                  priority
                   sizes="(max-width: 768px) 100vw, 800px"
                 />
                 <button
@@ -451,6 +459,7 @@ const PostCard: React.FC<PostCardProps> = ({
                       width={32}
                       height={32}
                       className="w-8 h-8 rounded-full object-cover"
+                      priority
                     />
                     <div className="flex-1">
                       <span className="font-bold">{comment.user?.name || "Unknown User"}</span>
