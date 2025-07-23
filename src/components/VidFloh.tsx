@@ -1,62 +1,64 @@
 "use client"
 import React, { useRef, useEffect, useState } from 'react'
+import axios from 'axios';
 import { users } from '../../Data'
 import VidFlohCard from './VidFlohCard'
 import Link from 'next/link'
 import { Plus, User, Search, TvMinimalPlay } from 'lucide-react'
+import Image from 'next/image'
+import { useAppContext } from '@/context/useAppContext'
 
 const VidFloh = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [userVideos, setUserVideos] = useState<any[]>([]);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const { userData, backendUrl, router } = useAppContext();
 
-  // Extract video posts from users and transform them to match VidFlohCard format
   useEffect(() => {
-    const extractedVideos = users.users.flatMap(user => 
-      user.posts
-        .filter(post => post.video) // Only posts with videos
-        .map(post => ({
-          id: post.video?.id || post.post_id,
-          username: user.username,
-          userId: user.user_id,
-          description: post.content,
-          time: post.video?.time || "1 day ago",
-          music: post.video?.music || "Original Sound",
-          videoUrl: post.video?.videoUrl || "/test.mp4",
-          likes: post.video?.likes || Math.floor(Math.random() * 1000) + 100,
-          comments: post.video?.comments || Math.floor(Math.random() * 100) + 10,
-          shares: post.video?.shares || Math.floor(Math.random() * 50) + 5,
-          profileImage: user.profile_picture,
-          commentList: [
-            {
-              id: `comment_${post.post_id}_1`,
+    const fetchVideos = async () => {
+      try {
+        const response = await axios.get(backendUrl + '/api/post/get-vidposts', { withCredentials: true });
+        if (response.data.success) {
+       
+          const extractedVideos = response.data.posts.map((post: any) => ({
+            id: post.id, // <-- ALWAYS use the Post id for like/comment
+            videoId: post.video?.id, // (optional, if you need the video id for something else)
+            username: post.user?.username,
+            userId: post.user?.id,
+            description: post.content,
+            time: post.createdAt,
+            music: post.video?.music || "Original Sound",
+            videoUrl: post.video?.videoUrl,
+            likes: post.likes || 0,
+            comments: post.comments?.length || 0,
+            shares: post.video?.shares || 0,
+            profileImage: post.user?.profilePicture,
+            commentList: (post.comments || []).map((c: any) => ({
+              id: c.id,
               user: {
-                name: "Alice Smith",
-                profileImage: "https://picsum.photos/id/237/200/300",
+                name: c.user?.name,
+                profilePicture: c.user?.profilePicture,
               },
-              text: "Amazing content! 🔥",
-              createdAt: "2024-06-10T10:15:00Z",
+              text: c.content,
+              createdAt: c.createdAt,
+            })),
+            user: {
+              name: post.user?.name,
+              profilePicture: post.user?.profilePicture,
+              username: post.user?.username,
             },
-            {
-              id: `comment_${post.post_id}_2`,
-              user: {
-                name: "Bob Johnson",
-                profileImage: "https://picsum.photos/id/238/200/300",
-              },
-              text: "Love this! Keep it up!",
-              createdAt: "2024-06-10T11:00:00Z",
-            },
-          ],
-          user: {
-            name: user.name,
-            profileImage: user.profile_picture,
-            username: user.username
-          }
-        }))
-    ).sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-
-    setUserVideos(extractedVideos);
-  }, []);
+            liked: post.liked,
+            bookmarked: post.bookmarked,
+            tags: post.tags,
+          })).sort((a: any, b: any) => new Date(b.time).getTime() - new Date(a.time).getTime());
+          setUserVideos(extractedVideos);
+        }
+      } catch (error) {
+        setUserVideos([]);
+      }
+    };
+    fetchVideos();
+  }, [backendUrl]);
 
   useEffect(() => {
     const observer = new window.IntersectionObserver(
@@ -92,8 +94,26 @@ const VidFloh = () => {
         <Link href="/live" className="p-2 rounded-full hover:bg-[var(--accent)/10] transition cursor-pointer">
           <TvMinimalPlay className="w-6 h-6 " />
         </Link>
-        <Link href="/my-videos" className="p-2 rounded-full hover:bg-[var(--accent)/10] transition cursor-pointer">
-          <User className="w-6 h-6 " />
+        <Link href="/profile" className="p-2 rounded-full hover:bg-[var(--accent)/10] transition cursor-pointer">
+        <div
+                    className="w-10 h-10 flex transition-all duration-300 items-center justify-center rounded-full"
+                    style={{
+                      backgroundColor: "var(--accent)",
+                    }}
+                  >
+                    <button
+                      onClick={() => router.push("/profile")}
+                      className="flex items-center justify-center cursor-pointer hover:scale-110 transition-all duration-300 w-full h-full"
+                    >
+                      <Image
+                        src={userData?.profilePicture || "/user.jpg"}
+                        alt="profile"
+                        width={40}
+                        height={40}
+                        className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                      />
+                    </button>
+                  </div>
         </Link>
       </div>
     </div>
@@ -102,7 +122,7 @@ const VidFloh = () => {
   return (
     <div className="relative flex flex-col h-full w-full"> 
       <CardHeader />
-      <div className="flex-1 w-full h-full overflow-y-auto snap-y snap-mandatory" style={{ scrollBehavior: 'smooth' }}>
+      <div className="flex-1 w-full h-full overflow-y-auto hide-scrollbar snap-y snap-mandatory" style={{ scrollBehavior: 'smooth' }}>
         {userVideos.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">

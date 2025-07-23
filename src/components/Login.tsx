@@ -54,7 +54,7 @@ const Login = () => {
       [name]: value,
     }));
 
-    // Clear the error for the current field as the user types
+
     if (errors[name as keyof typeof errors]) {
       setErrors((prevErrors) => ({
         ...prevErrors,
@@ -109,6 +109,7 @@ const Login = () => {
       );
       if (data.success) {
         toast.success(data.message);
+        setIsLogin(true)
       } else {
         toast.error(data.message || "An error occurred");
       }
@@ -131,7 +132,7 @@ const Login = () => {
     }
   } catch (error: any) {
     if (error.response) {
-      // Handles 409 and other non-2xx errors
+  
       toast.error(error.response.data.message || "An error occurred");
     } else {
       toast.error("Network error");

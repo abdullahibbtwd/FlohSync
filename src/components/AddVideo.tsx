@@ -1,5 +1,8 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
+import { useAppContext } from '../context/useAppContext';
+import axios from 'axios';
+import { toast } from 'sonner';
 
 export default function App() {
   return (
@@ -53,6 +56,8 @@ function VideoUploadEditor() {
 
   // Ref for the video element to control playback and get duration
   const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  const { userData, backendUrl } = useAppContext();
 
   /**
    * Handles video file selection from the input.
@@ -147,33 +152,49 @@ function VideoUploadEditor() {
     setTaggedUsers((prev) => prev.filter((user) => user !== userToRemove));
   };
 
-  /**
-   * Handles the final "Post" action.
-   * In a real application, this would send data to a backend.
-   */
-  const handlePost = () => {
-    console.log("--- Post Details ---");
-    console.log("Video File:", videoFile ? videoFile.name : "None");
-    // console.log("Trim Points:", trimPoints); // Removed trimPoints
-    console.log("Filter:", filter);
-    // console.log("Stickers:", stickers); // Removed stickers
-    console.log("Description:", description);
-    console.log("Tags:", tags);
-    console.log("Tagged Users:", taggedUsers);
-    console.log("Privacy:", privacy);
-    alert("Video posted successfully! (Check console for details)");
-    // Reset all states to go back to the initial upload screen
-    setStage("upload");
-    setVideoFile(null);
-    setVideoUrl(null);
-    setFilter("none");
-    // setTrimPoints({ start: 0, end: 0 }); // Removed trim points
-    setTags([]);
-    setTagInput("");
-    setTaggedUsers([]);
-    setUserSearchInput("");
-    setUserSearchResults([]);
-    setPrivacy("public");
+
+  const handlePost = async () => {
+    if (!videoFile) {
+      toast.error('No video selected');
+      return;
+    }
+    try {
+      // Convert video file to base64
+      const videoBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(videoFile);
+      });
+      const payload = {
+        content: description,
+        userId: userData?.id,
+        video: videoBase64,
+        tags: tags,
+      };
+      await axios.post(
+        backendUrl + '/api/post/createvideo',
+        payload,
+        { withCredentials: true }
+      );
+      toast.success('Video post created!');
+
+      setStage('upload');
+      setVideoFile(null);
+      setVideoUrl(null);
+      setFilter('none');
+      setTags([]);
+      setTagInput('');
+      setTaggedUsers([]);
+      setUserSearchInput('');
+      setUserSearchResults([]);
+      setPrivacy('public');
+      setDescription('');
+    } catch (error) {
+      console.error("Error in createVideoPost:", error);
+      toast.error('Error creating video post');
+      console.error(error);
+    }
   };
 
   return (
@@ -236,7 +257,7 @@ function VideoUploadEditor() {
             Edit Your FLOHSYNC Video
           </h2>
 
-          {/* Video Preview Area */}
+
           <div
             className="relative w-full aspect-video rounded-lg overflow-hidden shadow-xl mb-6"
             style={{ background: "var(--secondary-bg)" }}
@@ -256,9 +277,9 @@ function VideoUploadEditor() {
             )}
           </div>
 
-          {/* Editing Controls */}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            {/* Filters */}
+           
             <div
               className="p-4 rounded-lg shadow-inner"
               style={{ background: "var(--secondary-bg)" }}
@@ -313,14 +334,10 @@ function VideoUploadEditor() {
               </div>
             </div>
 
-            {/* Stickers */}
-            {/* Removed Stickers panel */}
+            
           </div>
 
-          {/* Trimming Controls */}
-          {/* Removed Trimming Controls */}
-
-          {/* Navigation Button */}
+      
           <div className="flex justify-end mt-auto">
             <button
               onClick={() => setStage("upload")}

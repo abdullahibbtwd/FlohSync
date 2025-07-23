@@ -3,6 +3,10 @@ import React, { useRef, useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { scroller, Element } from 'react-scroll';
+import { useAppContext } from '@/context/useAppContext';
+import { Heart } from 'lucide-react';
+import axios from 'axios';
+import { toast } from 'sonner';
 
 interface VidFlohProps {
   videoData: {
@@ -16,40 +20,45 @@ interface VidFlohProps {
     shares: number;
     profileImage?: string;
     userId?: string;
+    id?: string; 
+    liked: boolean;  
+    commentList?: {
+      id: string;
+      user: {
+        name: string;
+        profilePicture: string;
+      };
+      text: string;
+      replies: {
+        id: string;
+        user: {
+          name: string;
+           profilePicture: string;
+        };
+        text: string;
+      }[];
+    }[];
   },
   isActive: boolean;
 }
 
 const VidFlohCard: React.FC<VidFlohProps> = ({ videoData, isActive }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [isLiked, setIsLiked] = useState(false);
+  const { likePost, addVideoComment, userData } = useAppContext();
+  const [isLiked, setIsLiked] = useState(videoData.liked || false);
   const [likeCount, setLikeCount] = useState(videoData.likes);
   const [userInteracted, setUserInteracted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [showReplies, setShowReplies] = useState<{ [key: string]: boolean }>({});
-  const [comments, setComments] = useState([
-    {
-      id: '1',
-      user: { name: 'user1', image: 'https://randomuser.me/api/portraits/men/32.jpg' },
-      text: 'Great video!',
-      replies: [
-        { id: '1-1', user: { name: 'me', image: 'https://randomuser.me/api/portraits/men/33.jpg' }, text: 'Thanks!' }
-      ]
-    },
-    {
-      id: '2',
-      user: { name: 'user2', image: 'https://randomuser.me/api/portraits/women/44.jpg' },
-      text: 'Love the music!',
-      replies: []
-    }
-  ]);
+  const [comments, setComments] = useState(videoData.commentList || []);
   const [commentInput, setCommentInput] = useState('');
   const [replyInput, setReplyInput] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const modalRef = useRef<HTMLDivElement | null>(null);
   const commentsScrollRef = useRef<HTMLDivElement | null>(null);
-
+  const {backendUrl} = useAppContext(); 
   useEffect(() => {
     if (!userInteracted) {
       const handleUserInteract = () => setUserInteracted(true);
@@ -75,14 +84,48 @@ const VidFlohCard: React.FC<VidFlohProps> = ({ videoData, isActive }) => {
     }
   }, [isActive, isPaused]);
 
-  // Handle like toggle
-  const handleLike = () => {
+
+  const handleLike = async () => {
+    // Optimistically update UI
     if (isLiked) {
-      setLikeCount(prev => prev - 1);
+      setIsLiked(false);
+      setLikeCount((prev) => prev - 1);
     } else {
-      setLikeCount(prev => prev + 1);
+      setIsLiked(true);
+      setLikeCount((prev) => prev + 1);
     }
-    setIsLiked(!isLiked);
+    // Call backend
+    try {
+      await likePost(videoData.id || '');
+      // Optionally: update state again based on backend response if needed
+      // (e.g., if backend returns the new like count)
+    } catch (err) {
+      // Revert UI if backend fails (optional)
+      setIsLiked((prev) => !prev);
+      setLikeCount((prev) => (isLiked ? prev + 1 : prev - 1));
+    }
+  };
+
+  // Handle add comment
+  const handleAddComment = async () => {
+    if (commentInput.trim()) {
+      const newComment = await addVideoComment(videoData.id || '', commentInput);
+      if (newComment) {
+        setComments(prev => [
+          ...prev,
+          {
+            id: newComment.id,
+            user: {
+              name: newComment.user?.name || 'me',
+              profilePicture: newComment.user?.profilePicture || '/user.jpg',
+            },
+            text: newComment.content,
+            replies: [],
+          },
+        ]);
+        setCommentInput('');
+      }
+    }
   };
 
   // Close modal on outside click
@@ -98,7 +141,6 @@ const VidFlohCard: React.FC<VidFlohProps> = ({ videoData, isActive }) => {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [showComments]);
 
-  // Scroll to last comment on open or when comments change
   useEffect(() => {
     if (showComments && commentsScrollRef.current) {
       commentsScrollRef.current.scrollTop = commentsScrollRef.current.scrollHeight;
@@ -114,6 +156,65 @@ const VidFlohCard: React.FC<VidFlohProps> = ({ videoData, isActive }) => {
       });
     }
   }, [showComments, comments]);
+
+    const handleShare = () => {
+    const postUrl = `${window.location.origin}/?post=${videoData.id}`;
+    if (navigator.share) {
+      navigator.share({
+        title: 'Check out this post!',
+        url: postUrl,
+      }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(postUrl);
+      toast.success('Post link copied to clipboard!');
+    }
+  };
+  const handleReplySubmit = async (e: React.FormEvent, commentId: string) => {
+    e.preventDefault();
+    if (!replyInput.trim()) return;
+    setIsSubmitting(true);
+    try {
+      const response = await axios.post(
+        `${backendUrl}/api/reply/create`,
+        {
+          content: replyInput,
+          commentId,
+        },
+        { withCredentials: true }
+      );
+      if (response.data.success) {
+        const newReply = {
+          id: response.data.reply.id,
+          user: {
+            name: response.data.reply.user.name,
+            profilePicture: response.data.reply.user.profilePicture,
+          },
+          text: response.data.reply.content,
+          createdAt: response.data.reply.createdAt,
+        };
+        setComments(prev =>
+          prev.map(c =>
+            c.id === commentId
+              ? {
+                  ...c,
+                  replies: [...(c.replies || []), newReply],
+                }
+              : c
+          )
+        );
+        setReplyInput('');
+        setReplyTo(null);
+        setShowReplies(prev => ({ ...prev, [commentId]: true }));
+      } else {
+        // Optionally show error
+        alert(response.data.message || "Failed to post reply");
+      }
+    } catch (err) {
+      alert("Failed to post reply");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="relative min-h-[83vh] w-full flex justify-center items-center bg-black overflow-hidden">
@@ -162,15 +263,11 @@ const VidFlohCard: React.FC<VidFlohProps> = ({ videoData, isActive }) => {
             onClick={handleLike}
             className="bg-black/30 rounded-full p-2 flex items-center justify-center cursor-pointer"
           >
-            {isLiked ? (
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="red" width="28" height="28">
-                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="28" height="28">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-            )}
+             <Heart
+                className="cursor-pointer"
+                fill={isLiked ? "red" : "none"}
+                stroke={isLiked ? "red" : "currentColor"}
+              />
           </button>
           <span className="text-xs mt-1">{likeCount}</span>
         </div>
@@ -190,7 +287,7 @@ const VidFlohCard: React.FC<VidFlohProps> = ({ videoData, isActive }) => {
         
         {/* Share Button */}
         <div className="flex flex-col items-center">
-          <button className="bg-black/30 rounded-full p-2 cursor-pointer">
+          <button className="bg-black/30 rounded-full p-2 cursor-pointer" onClick={handleShare}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="28" height="28">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
             </svg>
@@ -223,7 +320,7 @@ const VidFlohCard: React.FC<VidFlohProps> = ({ videoData, isActive }) => {
                   >
                     <div className="flex items-center mb-1">
                       <Image
-                        src={comment.user.image}
+                        src={comment.user.profilePicture || "/user.jpg"}
                         alt={comment.user.name}
                         width={24}
                         height={24}
@@ -236,12 +333,19 @@ const VidFlohCard: React.FC<VidFlohProps> = ({ videoData, isActive }) => {
                       >
                         Reply
                       </button>
-                      {comment.replies.length > 0 && (
+                      {(comment.replies?.length ?? 0) > 0 && (
                         <button
                           className="text-xs text-gray-400 ml-2"
-                          onClick={() => setShowReplies((prev) => ({ ...prev, [comment.id]: !prev[comment.id] }))}
+                          onClick={() =>
+                            setShowReplies((prev) => ({
+                              ...prev,
+                              [comment.id]: !prev[comment.id],
+                            }))
+                          }
                         >
-                          {showReplies[comment.id] ? 'Hide Replies' : `View Replies (${comment.replies.length})`}
+                          {showReplies[comment.id]
+                            ? 'Hide Replies'
+                            : `View Replies (${comment.replies?.length ?? 0})`}
                         </button>
                       )}
                     </div>
@@ -258,20 +362,10 @@ const VidFlohCard: React.FC<VidFlohProps> = ({ videoData, isActive }) => {
                         />
                         <button
                           className="text-xs text-blue-400"
-                          onClick={() => {
-                            if (replyInput.trim()) {
-                              setComments(prev => prev.map(c =>
-                                c.id === comment.id
-                                  ? { ...c, replies: [...c.replies, { id: `${c.id}-${c.replies.length+1}`, user: { name: 'me', image: 'https://randomuser.me/api/portraits/men/33.jpg' }, text: replyInput }] }
-                                  : c
-                              ));
-                              setReplyInput('');
-                              setReplyTo(null);
-                              setShowReplies(prev => ({ ...prev, [comment.id]: true }));
-                            }
-                          }}
+                          onClick={(e) => handleReplySubmit(e, comment.id)}
+                          disabled={isSubmitting}
                         >
-                          Send
+                          {isSubmitting ? "Sending..." : "Send"}
                         </button>
                         <button
                           className="text-xs text-gray-400 ml-2"
@@ -287,7 +381,7 @@ const VidFlohCard: React.FC<VidFlohProps> = ({ videoData, isActive }) => {
                         {comment.replies.map(reply => (
                           <div key={reply.id} className="flex items-center mb-1 bg-neutral-700 rounded px-2 py-1">
                             <Image
-                              src={reply.user.image}
+                              src={reply.user.profilePicture || "/user.jpg"}
                               alt={reply.user.name}
                               width={20}
                               height={20}
@@ -333,15 +427,7 @@ const VidFlohCard: React.FC<VidFlohProps> = ({ videoData, isActive }) => {
               />
               <button
                 className="text-xs cursor-pointer p-2 bg-green-600 rounded-md ml-2"
-                onClick={() => {
-                  if (commentInput.trim()) {
-                    setComments(prev => [
-                      ...prev,
-                      { id: `${prev.length+1}`, user: { name: 'me', image: 'https://randomuser.me/api/portraits/men/33.jpg' }, text: commentInput, replies: [] }
-                    ]);
-                    setCommentInput('');
-                  }
-                }}
+                onClick={handleAddComment}
               >
                 Send
               </button>

@@ -67,10 +67,6 @@ const Profile = () => {
         toast.error("something went wrong!")
       }
     };
-    fetchUserPosts();
-  }, [backendUrl]);
-
-  useEffect(() => {
     const fetchSavedPosts = async () => {
       try {
         const response = await axios.get(backendUrl + '/api/post/save', { withCredentials: true });
@@ -81,10 +77,6 @@ const Profile = () => {
         toast.error("Failed to fetch saved posts!");
       }
     };
-    fetchSavedPosts();
-  }, [backendUrl]);
-
-  useEffect(() => {
     const fetchLikedPosts = async () => {
       try {
         const response = await axios.get(backendUrl + '/api/post/like', { withCredentials: true });
@@ -96,7 +88,12 @@ const Profile = () => {
       }
     };
     fetchLikedPosts();
+    fetchSavedPosts();
+    fetchUserPosts();
   }, [backendUrl]);
+
+
+
 
   function getRelativeTime(dateString: string) {
     const now = new Date();

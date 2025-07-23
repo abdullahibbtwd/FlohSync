@@ -90,6 +90,7 @@ interface AppContextProps {
   likePost: (postId: string) => void;
   bookmarkedPosts: string[];
   setBookmarkedPosts: (posts: string[]) => void;
+  addVideoComment: (postId: string, content: string) => Promise<any>;
 }
 
 const AppContext = createContext<AppContextProps | undefined>(undefined);
@@ -247,6 +248,24 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }
 };
 
+  const addVideoComment = async (postId: string, content: string) => {
+    try {
+      const response = await axios.post(
+        backendUrl + '/api/comment/create',
+        { postId, content },
+        { withCredentials: true }
+      );
+      if (response.data.success) {
+        toast.success('Comment added!');
+        return response.data.comment;
+      } else {
+        toast.error(response.data.message || 'Failed to add comment');
+      }
+    } catch (error) {
+      toast.error('Failed to add comment');
+    }
+  };
+
   useEffect(() => {
     getUserData();
     getUsersToFollow();
@@ -270,7 +289,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     likePost,
     bookmark,
     bookmarkedPosts,
-    setBookmarkedPosts
+    setBookmarkedPosts,
+    addVideoComment
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
