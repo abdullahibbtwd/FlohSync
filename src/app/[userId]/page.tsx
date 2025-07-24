@@ -82,25 +82,17 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ params }) => {
   const router = useRouter();
   const { userData, backendUrl } = useAppContext();
 
-  // Fetch user data from backend
   useEffect(() => {
     const fetchUser = async () => {
       try {
         setLoading(true);
-        // For now, we'll get the user from the usersToFollow list
-        // In a real app, you'd have a separate API endpoint for individual users
-        const response = await axios.get(`${backendUrl}/api/user/userToFollow`, {
-          withCredentials: true,
-        });
+      
+        const response = await axios.get(`${backendUrl}/api/user/user/${userId}`, { withCredentials: true });
+        const foundUser = response.data.user;
         
-        if (response.data.success) {
-          const foundUser = response.data.users.find((u: User) => u.id === userId);
-          if (foundUser) {
-            setUser(foundUser);
-            setIsFollowing(foundUser.relation_status === 'following' || foundUser.relation_status === 'friend');
-          } else {
-            notFound();
-          }
+        if (foundUser) {
+          setUser(foundUser);
+          setIsFollowing(foundUser.relation_status === 'following' || foundUser.relation_status === 'friend');
         } else {
           notFound();
         }
@@ -356,6 +348,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ params }) => {
           getTabContent().map((post: Post) => (
             <PostCard
               key={post.id}
+              id={post.id}
               user={{
                 name: post.user.name,
                 profileImage: post.user.profileImage,

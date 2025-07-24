@@ -36,7 +36,7 @@ export interface PostCardProps {
   liked?: boolean;
   bookmarked?: boolean;
   comments: PostComment[];
-  id: string; // Added id prop
+  id: string; 
 }
 
 const PostCard: React.FC<PostCardProps> = ({
@@ -63,7 +63,7 @@ const PostCard: React.FC<PostCardProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [openReplies, setOpenReplies] = useState<{ [commentId: string]: boolean }>({});
 
-  const { backendUrl, userData,likePost ,bookmark} = useAppContext();
+  const { backendUrl,likePost ,bookmark} = useAppContext();
 
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
