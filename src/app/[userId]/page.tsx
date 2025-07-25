@@ -20,23 +20,18 @@ interface User {
   id: string;
   name: string;
   username: string;
-  profile_picture: string;
+  profilePicture: string; 
   location: string;
   bio: string;
   joinedDate: string;
-  followers: number;
-  following: number;
-  posts: number;
+  followersCount: number;
+  followingCount: number;
+  post: number;
   relation_status: string;
+  posts: Post[];
 }
 
-interface Video {
-  id: string;
-  content: string;
-  videoUrl: string;
-  createdAt: string;
-  likes: number;
-}
+
 
 interface Post {
   id: string;
@@ -48,7 +43,7 @@ interface Post {
     name: string;
     profileImage: string;
   };
-  contentImage: any[];
+  image: any[];
 }
 
 function getRelativeTime(dateString: string) {
@@ -78,7 +73,6 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ params }) => {
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const [activeTab, setActiveTab] = useState<'posts' | 'videos' | 'photos'>('posts');
   const router = useRouter();
   const { userData, backendUrl } = useAppContext();
 
@@ -86,13 +80,12 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ params }) => {
     const fetchUser = async () => {
       try {
         setLoading(true);
-      
         const response = await axios.get(`${backendUrl}/api/user/user/${userId}`, { withCredentials: true });
-        const foundUser = response.data.user;
-        
+        const foundUser = response.data.userData;
         if (foundUser) {
           setUser(foundUser);
           setIsFollowing(foundUser.relation_status === 'following' || foundUser.relation_status === 'friend');
+          console.log('User data fetched:', foundUser);
         } else {
           notFound();
         }
@@ -103,7 +96,6 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ params }) => {
         setLoading(false);
       }
     };
-
     if (userId) {
       fetchUser();
     }
@@ -128,12 +120,10 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ params }) => {
 
   const handleFollow = () => {
     setIsFollowing(!isFollowing);
-    // Here you would typically update the backend
     alert(isFollowing ? `Unfollowed ${user.name}` : `Started following ${user.name}`);
   };
 
   const handleMessage = () => {
-    // Navigate to chat with this user
     router.push(`/chat?user=${user.id}`);
   };
 
@@ -153,10 +143,9 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ params }) => {
         </button>
       );
     }
-
     if (isFollowing) {
       return (
-        <button 
+        <button
           onClick={handleFollow}
           className="px-6 py-2 bg-gray-200 dark:bg-gray-700  text-gray-800 dark:text-gray-200 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition"
         >
@@ -165,9 +154,8 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ params }) => {
         </button>
       );
     }
-
     return (
-      <button 
+      <button
         onClick={handleFollow}
         className="px-6 py-2 bg-[var(--accent)] text-black hover:text-white rounded-full hover:bg-[var(--accent)/80] transition"
       >
@@ -177,15 +165,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ params }) => {
     );
   };
 
-  // For now, we'll show empty content since we don't have posts in the current API
-  const getTabContent = () => {
-    return [];
-  };
-
-  const getTabCount = () => {
-    return 0; // No posts data in current API
-  };
-
+  // --- MAIN RENDER ---
   return (
     <div className="min-h-screen bg-[var(--primary-bg)]">
       {/* Header */}
@@ -197,7 +177,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ params }) => {
           </Link>
           <h1 className="text-lg font-semibold">{user.name}</h1>
           <div className="relative">
-            <button 
+            <button
               onClick={() => setShowMenu(!showMenu)}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition"
             >
@@ -220,14 +200,13 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ params }) => {
             {/* Profile Picture */}
             <div className="flex-shrink-0">
               <Image
-                src={user.profile_picture || "/user.jpg"}
+                src={user.profilePicture || "/user.jpg"}
                 alt={user.name}
                 width={120}
                 height={120}
                 className="w-32 h-32 rounded-full object-cover border-4 border-white dark:border-gray-700 shadow-lg"
               />
             </div>
-
             {/* Profile Info */}
             <div className="flex-1">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
@@ -244,11 +223,10 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ params }) => {
                     </div>
                   </div>
                 </div>
-
                 <div className="flex flex-col sm:flex-row gap-3">
                   {getActionButton()}
                   {!isCurrentUser && (
-                    <button 
+                    <button
                       onClick={handleMessage}
                       className="px-6 py-2 border border-[var(--accent)] hover:text-black text-[var(--accent)] rounded-full hover:bg-[var(--accent)]  transition"
                     >
@@ -258,19 +236,18 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ params }) => {
                   )}
                 </div>
               </div>
-
               {/* Stats */}
               <div className="flex gap-6 text-sm">
                 <div>
-                  <span className="font-semibold">{user.posts}</span>
+                  <span className="font-semibold">{user.post}</span>
                   <span className=" ml-1">posts</span>
                 </div>
                 <div>
-                  <span className="font-semibold">{user.followers}</span>
+                  <span className="font-semibold">{user.followersCount}</span>
                   <span className=" ml-1">followers</span>
                 </div>
                 <div>
-                  <span className="font-semibold">{user.following}</span>
+                  <span className="font-semibold">{user.followingCount}</span>
                   <span className=" ml-1">following</span>
                 </div>
                 <div>
@@ -282,90 +259,53 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({ params }) => {
         </div>
 
         {/* Content Navigation Tabs */}
-      <div className="bg-[var(--secondary-bg)] rounded-lg p-4 mb-6">
-        <div className="flex space-x-1">
-          <button
-            onClick={() => setActiveTab('posts')}
-            className={`flex-1 py-2 px-4 rounded-lg font-medium transition ${
-              activeTab === 'posts'
-                ? 'bg-[var(--accent)] text-black'
-                : ''
-            }`}
-          >
-            Posts ({getTabCount()})
-          </button>
-          <button
-            onClick={() => setActiveTab('photos')}
-            className={`flex-1  py-2 px-2 rounded-lg font-medium transition ${
-              activeTab === 'photos'
-                ? 'bg-[var(--accent)] text-black'
-                : ''
-            }`}
-          >
-            Photos ({getTabCount()})
-          </button>
-          <button
-            onClick={() => setActiveTab('videos')}
-            className={`flex-1 py-2 px-4 rounded-lg font-medium transition ${
-              activeTab === 'videos'
-                ? 'bg-[var(--accent)] text-black'
-                : ''
-            }`}
-          >
-            Videos ({getTabCount()})
-          </button>
+        <div className="bg-[var(--secondary-bg)] rounded-lg p-4 mb-6">
+          <div className="flex space-x-1">
+            <button
+              className={`flex-1 py-2 px-4 rounded-lg font-medium transition ${
+                'bg-[var(--accent)] text-black'
+              }`}
+              disabled
+            >
+              Posts {user.post > 0 ? `(${user.post})` : ''}
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* Content Section */}
-      <div className="space-y-4">
-        {getTabContent().length === 0 ? (
-          <div className="text-center py-12 ">
-            <p>No {activeTab} yet</p>
-          </div>
-        ) : activeTab === 'videos' ? (
-          // Video content display
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {getTabContent().map((video: Video) => (
-              <div key={video.id} className="bg-[var(--secondary-bg)] rounded-lg overflow-hidden">
-                <video
-                  src={video.videoUrl}
-                  className="w-full h-48 object-cover"
-                  controls
-                />
-                <div className="p-4">
-                  <p className="text-sm  mb-2">{video.content}</p>
-                  <div className="flex items-center justify-between text-xs ">
-                    <span>{getRelativeTime(video.createdAt)}</span>
-                    <span>{video.likes} likes</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          // Posts and Photos content display
-          getTabContent().map((post: Post) => (
-            <PostCard
-              key={post.id}
-              id={post.id}
-              user={{
-                name: post.user.name,
-                profileImage: post.user.profileImage,
-                status: undefined
-              }}
-              time={getRelativeTime(post.createdAt)}
-              text={post.content}
-              images={post.contentImage}
-              likeCount={post.likes}
-              commentCount={post.comments.length}
-              liked={false}
-              bookmarked={false}
-              comments={post.comments}
-            />
-          ))
-        )}
-      </div>
+        {/* Content Section */}
+        <div className="space-y-4">
+          {user.posts.length === 0 ? (
+            <div className="text-center py-12 ">
+              <p>No posts yet</p>
+            </div>
+          ) : (
+            [...user.posts].reverse().map((post: any) => (
+              <PostCard
+                key={post.id}
+                id={post.id}
+                user={{
+                  name: user.name,
+                  profileImage: user.profilePicture,
+                  userId: user.id,
+                }}
+                time={getRelativeTime(post.createdAt)}
+                text={post.content}
+                images={
+                  Array.isArray(post.image)
+                    ? post.image.filter((img: string) => !!img).map((img: string, idx: number) => ({ id: idx, image: img }))
+                    : typeof post.image === "string" && post.image.length > 0
+                      ? JSON.parse(post.image).filter((img: string) => !!img).map((img: string, idx: number) => ({ id: idx, image: img }))
+                      : []
+                }
+                likeCount={post.likes ? post.likes.length : 0}
+                commentCount={post.comments ? post.comments.length : 0}
+                liked={false}
+                bookmarked={false}
+                comments={post.comments || []}
+              />
+            )))
+          }
+        </div>
       </div>
     </div>
   );
